@@ -19,6 +19,8 @@ const PORT = 8123;
 const DEBUG_PORT = 9333;
 /** Each shot stays under 240 KiB so four of them, base64'd into dossier.json beside 160 KiB of source text, keep it under the 1.5 MiB cap. */
 const MAX_BYTES = 240 * 1024;
+/** Window size: 1280x800 for the screenshots; `--size WxH` checks the HUD at other shapes in --play. */
+const [WIDTH, HEIGHT] = (args.includes('--size') ? args[args.indexOf('--size') + 1] : '1280x800').split('x').map(Number);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -39,7 +41,7 @@ async function waitFor(fn, timeout, label) {
 const server = spawn(process.execPath, [join(root, 'serve.ts'), '--port', String(PORT)], { stdio: 'ignore' });
 const profile = mkdtempSync(join(tmpdir(), 'kestrel-chrome-'));
 const chrome = spawn(CHROME, [
-  '--headless=new', `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`, '--window-size=1280,800',
+  '--headless=new', `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`, `--window-size=${WIDTH},${HEIGHT}`,
   '--hide-scrollbars', '--mute-audio', '--no-first-run', '--no-default-browser-check', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', 'about:blank',
 ], { stdio: 'ignore' });
 
@@ -80,14 +82,14 @@ try {
   await send('Runtime.enable');
   await send('Log.enable');
   await send('Page.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width: WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
   const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result.value;
 
   const capture = async (file) => {
     let quality = 90;
     let bytes;
     for (;;) {
-      const shotData = await send('Page.captureScreenshot', { format: 'jpeg', quality, clip: { x: 0, y: 0, width: 1280, height: 800, scale: 1 } });
+      const shotData = await send('Page.captureScreenshot', { format: 'jpeg', quality, clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 1 } });
       bytes = Buffer.from(shotData.data, 'base64');
       if (bytes.length <= MAX_BYTES || quality <= 40) break;
       quality -= 4;
