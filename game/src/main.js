@@ -9,7 +9,7 @@ import { approachInfo, createSession, dropCrate, readouts, stepSession, toggleFl
 import { createWorldScene } from './world-scene.js';
 import { drawCockpitPanel } from './cockpit-panel.js';
 import { drawFlightHud, text } from './hud.js';
-import { drawMissionBoard, poseForBoard } from './mission-board.js';
+import { drawMissionBoard, driftOnBoard, poseForBoard } from './mission-board.js';
 import { drawResultCard } from './result-card.js';
 import { createEngineAudio } from './engine-audio.js';
 import { createInput } from './input.js';
@@ -279,6 +279,7 @@ function runGame() {
     if (game.screen === 'board' || game.screen === 'result') {
       view = 'orbit';
       stepSession(session, { pitch: 0, roll: 0, yaw: 0, throttle: 0 }, 0);
+      if (game.screen === 'board') driftOnBoard(session, game.time);
     }
     if (session.state !== 'flying' && game.screen === 'fly') view = 'orbit';
     if (view === 'orbit' && game.screen === 'fly') placeOrbit(session.aircraft, world.rig.orbitAngle, 45, 16, new THREE.Vector3());

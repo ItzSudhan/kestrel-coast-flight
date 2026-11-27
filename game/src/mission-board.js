@@ -4,6 +4,7 @@
 import { FONT, panel, text } from './hud.js';
 import { MISSIONS, clock } from './missions.js';
 import { createAircraft } from './flight-physics.js';
+import { quatFromAttitude } from './flight-math.js';
 
 const AMBER = '#ffb347';
 const CARD_COLOURS = ['#ffb347', '#6fd3ff', '#ff6a5a', '#b48cff'];
@@ -15,6 +16,13 @@ export const BOARD_POSE = { x: -3700, y: 150, z: 1650, heading: 335, speedKt: 92
 export function poseForBoard(session) {
   session.aircraft = createAircraft(BOARD_POSE);
   session.aircraft.rpm = 2350;
+}
+
+/** Let the board's aircraft ride the air: a slow bob and a little roll. */
+export function driftOnBoard(session, time) {
+  const a = session.aircraft;
+  a.pos.y = BOARD_POSE.y + Math.sin(time * 0.9) * 0.35;
+  a.q = quatFromAttitude((BOARD_POSE.heading * Math.PI) / 180 + Math.sin(time * 0.31) * 0.02, BOARD_POSE.pitch + Math.sin(time * 0.9 + 1) * 0.015, BOARD_POSE.bank + Math.sin(time * 0.53) * 0.05);
 }
 
 function icon(g, kind, x, y, s, colour) {
