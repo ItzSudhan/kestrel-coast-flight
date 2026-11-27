@@ -8,7 +8,21 @@ export const VIEW_COCKPIT = 'cockpit';
 export const VIEW_ORBIT = 'orbit';
 
 export function createCameraRig(camera) {
-  return { camera, mode: VIEW_CHASE, pos: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), primed: false, orbitAngle: 0, orbitCentre: new THREE.Vector3(), orbitRadius: 30, orbitHeight: 8 };
+  return { camera, mode: VIEW_CHASE, pos: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), primed: false, orbitAngle: 0, orbitCentre: new THREE.Vector3(), orbitRadius: 30, orbitHeight: 8, shake: 0, shakeTime: 0 };
+}
+
+/** Jolt the camera: touchdowns, bounces, crashes and the stall buffet (0..1). */
+export function shakeCamera(rig, amount) {
+  rig.shake = Math.max(rig.shake, Math.min(1, amount));
+}
+
+/** A smooth, repeatable wobble for the current shake. */
+function shakeOffset(rig, dt) {
+  rig.shakeTime += dt;
+  rig.shake *= Math.exp(-dt * 4);
+  const t = rig.shakeTime * 31;
+  const s = rig.shake;
+  return { x: (Math.sin(t) + Math.sin(t * 1.7 + 1)) * 0.5 * s, y: (Math.sin(t * 1.3 + 2) + Math.sin(t * 2.3)) * 0.5 * s };
 }
 
 const forward = new THREE.Vector3();
@@ -23,9 +37,10 @@ export function updateCamera(rig, aircraft, dt, snap = false) {
   forward.set(0, 0, -1).applyQuaternion(q);
   upVec.set(0, 1, 0).applyQuaternion(q);
   const p = new THREE.Vector3(aircraft.pos.x, aircraft.pos.y, aircraft.pos.z);
+  const jolt = shakeOffset(rig, dt);
   if (rig.mode === VIEW_COCKPIT) {
     camera.position.copy(new THREE.Vector3(-0.3, 0.84, -1.35).applyQuaternion(q).add(p));
-    camera.quaternion.copy(q).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.07));
+    camera.quaternion.copy(q).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.07 + jolt.y * 0.02, jolt.x * 0.015, 0)));
     camera.fov = 72;
     camera.updateProjectionMatrix();
     rig.primed = false;
@@ -58,7 +73,7 @@ export function updateCamera(rig, aircraft, dt, snap = false) {
   const lean = new THREE.Vector3(0, 1, 0).lerp(upVec, 0.22).normalize();
   rig.up.lerp(lean, snap || !rig.primed ? 1 : 1 - Math.exp(-dt * 3));
   rig.primed = true;
-  camera.position.copy(rig.pos);
+  camera.position.copy(rig.pos).add(new THREE.Vector3(jolt.x * 0.35, jolt.y * 0.35, 0));
   camera.up.copy(rig.up);
   camera.lookAt(rig.look);
   camera.fov = 62 + Math.min(8, Math.max(0, (speed - 45) * 0.25));

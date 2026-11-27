@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { approachInfo, createSession, dropCrate, readouts, stepSession, toggleFlaps, toggleGear } from './game-session.js';
 import { createWorldScene } from './world-scene.js';
+import { shakeCamera } from './chase-camera.js';
 import { drawCockpitPanel } from './cockpit-panel.js';
 import { drawFlightHud, text } from './hud.js';
 import { drawMissionBoard, driftOnBoard, poseForBoard } from './mission-board.js';
@@ -125,15 +126,18 @@ function handleEvents(events) {
       audio.objective();
     } else if (e.type === 'stall') showBanner('STALL — NOSE DOWN, POWER UP', '#ff5a45', 1.5);
     else if (e.type === 'touchdown') {
+      shakeCamera(world.rig, Math.min(1, 0.15 + -e.vsFpm / 700));
       showBanner(`TOUCHDOWN ${Math.round(e.vsFpm)} FPM · HOLD B TO BRAKE`, e.vsFpm > -230 ? '#5dff8a' : '#ffc94a', 3);
       touchdownDust(world.fx, a.pos);
       audio.chirp();
     } else if (e.type === 'bounce') {
+      shakeCamera(world.rig, 0.8);
       showBanner('BOUNCED!', '#ffc94a');
       audio.chirp();
     } else if (e.type === 'tree-strike') showBanner(`TREE STRIKE · WINGS ${Math.round(a.damage.wings * 100)}%`, '#ff8a4a');
     else if (e.type === 'engine-out') showBanner('ENGINE OUT — GLIDE', '#ff5a45', 3);
     else if (e.type === 'crash') {
+      shakeCamera(world.rig, 1);
       startWreck(world.fx, a);
       audio.crash();
       showBanner(e.cause.toUpperCase(), '#ff5a45', 4);
@@ -142,6 +146,7 @@ function handleEvents(events) {
     else if (e.type === 'landed') announce(`Landed: ${e.grade}`);
   }
   if (game.session.storm.flash > 0.99) audio.thunder();
+  if (a.stallWarning) shakeCamera(world.rig, 0.18);
   const lastCall = game.session.radio[game.session.radio.length - 1];
   if (lastCall && lastCall !== game.heardCall) {
     game.heardCall = lastCall;
