@@ -124,7 +124,7 @@ function pathReplay(g, x, y, w, h, report, time) {
     g.lineTo(px(path[i].t), py(path[i].ft));
     g.stroke();
   }
-  [0, Math.floor(path.length / 2)].forEach((i) => text(g, `${Math.round(path[i].ft)} FT · ${Math.round(path[i].kt)} KT`, px(path[i].t), py(path[i].ft) - 12, 11, '#ffffff', 'center', 800));
+  [0, Math.floor(path.length / 2)].forEach((i) => text(g, `${Math.round(path[i].ft)} FT · ${Math.round(path[i].kt)} KT`, Math.max(x + 60, px(path[i].t)), py(path[i].ft) - 12 < y + 34 ? py(path[i].ft) + 14 : py(path[i].ft) - 12, 11, '#ffffff', 'center', 800));
   const end = path[path.length - 1];
   g.strokeStyle = '#ff5a45';
   g.lineWidth = 3.5;

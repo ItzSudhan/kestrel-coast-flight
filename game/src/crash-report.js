@@ -61,14 +61,19 @@ export function crashReport(session, recorder) {
   const last = samples[samples.length - 1];
   const lostFt = Math.round(((first.y - last.y) * FT) / 10) * 10;
   const maxBank = Math.round(Math.max(...samples.map((s) => Math.abs(s.bank))));
+  const stalled = samples.some((s) => s.stalled);
   const parts = [`${Math.round(first.kt)} → ${Math.round(last.kt)} KT`, lostFt >= 0 ? `LOST ${lostFt} FT` : `CLIMBED ${-lostFt} FT`];
   if (maxBank > 25) parts.push(`BANK ${maxBank}°`);
-  if (samples.some((s) => s.stalled)) parts.push('STALLED');
+  if (stalled) parts.push('STALLED');
+  // What the tape shows outranks where she came down: a stall or a spiral is the real lesson.
+  let lesson = LESSONS[kind];
+  if (stalled && kind !== 'stall') lesson = LESSONS.stall;
+  else if (maxBank > 70 && !['storm', 'stranded'].includes(kind)) lesson = 'That was a spiral: roll the wings level first, then ease out of the dive.';
   return {
     cause,
     kind,
     summary: parts.join(' · '),
-    lesson: LESSONS[kind],
-    path: samples.map((s) => ({ t: s.t - last.t, x: s.x, z: s.z, ft: s.agl * FT, kt: s.kt, stalled: s.stalled })),
+    lesson,
+    path: samples.map((s) => ({ t: s.t - last.t, x: s.x, y: s.y, z: s.z, ft: s.agl * FT, kt: s.kt, stalled: s.stalled })),
   };
 }

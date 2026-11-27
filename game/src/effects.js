@@ -64,7 +64,55 @@ export function createEffects(scene) {
   crate.visible = false;
   scene.add(crate);
 
-  return { trails, puffs, nextPuff: 0, debrisMesh, debris: [], fire, boat, crate, flare, random: createRandom(5), puffTimer: 0, wreckAt: null };
+  // The crash replay's path: the last ten seconds, drawn as a glowing line in the world.
+  const trackGeometry = new THREE.BufferGeometry();
+  trackGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(64 * 3), 3));
+  trackGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(64 * 3), 3));
+  const track = new THREE.Line(trackGeometry, new THREE.LineBasicMaterial({ vertexColors: true, fog: false }));
+  track.frustumCulled = false;
+  track.visible = false;
+  scene.add(track);
+  const ghost = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowSprite(), color: '#ffffff', blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false }));
+  ghost.scale.set(14, 14, 1);
+  ghost.visible = false;
+  scene.add(ghost);
+
+  return { trails, puffs, nextPuff: 0, debrisMesh, debris: [], fire, boat, crate, flare, track, ghost, trackPath: null, random: createRandom(5), puffTimer: 0, wreckAt: null };
+}
+
+/**
+ * Show the crash report's path (crash-report.js) in the world: cyan, red where the wing was
+ * stalled, with a light that flies it again in a loop. Null hides it.
+ */
+export function showReplayPath(fx, path) {
+  fx.trackPath = path && path.length > 1 ? path : null;
+  fx.track.visible = Boolean(fx.trackPath);
+  fx.ghost.visible = Boolean(fx.trackPath);
+  if (!fx.trackPath) return;
+  const positions = fx.track.geometry.getAttribute('position');
+  const colours = fx.track.geometry.getAttribute('color');
+  const count = Math.min(64, fx.trackPath.length);
+  for (let i = 0; i < count; i += 1) {
+    const p = fx.trackPath[i];
+    positions.setXYZ(i, p.x, p.y, p.z);
+    if (p.stalled) colours.setXYZ(i, 1, 0.3, 0.25);
+    else colours.setXYZ(i, 0.55, 0.95, 1);
+  }
+  positions.needsUpdate = true;
+  colours.needsUpdate = true;
+  fx.track.geometry.setDrawRange(0, count);
+}
+
+/** Fly the replay light along the path, once every six seconds. */
+export function updateReplayPath(fx, time) {
+  if (!fx.trackPath) return;
+  const path = fx.trackPath;
+  const u = ((time % 6) / 6) * (path.length - 1);
+  const i = Math.floor(u);
+  const f = u - i;
+  const a = path[i];
+  const b = path[Math.min(path.length - 1, i + 1)];
+  fx.ghost.position.set(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f, a.z + (b.z - a.z) * f);
 }
 
 function emitPuff(fx, position, colour, size, life, vel) {
@@ -104,6 +152,7 @@ export function clearWreck(fx) {
   fx.wreckAt = null;
   fx.debrisMesh.visible = false;
   fx.fire.visible = false;
+  showReplayPath(fx, null);
 }
 
 /** Advance trails, puffs and debris; `model` is the aircraft model for wing-tip positions. */

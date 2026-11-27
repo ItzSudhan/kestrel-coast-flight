@@ -16,7 +16,7 @@ import { drawMissionBoard, driftOnBoard, poseForBoard } from './mission-board.js
 import { drawResultCard } from './result-card.js';
 import { createEngineAudio } from './engine-audio.js';
 import { createInput } from './input.js';
-import { clearWreck, startWreck, touchdownDust } from './effects.js';
+import { clearWreck, showReplayPath, startWreck, touchdownDust } from './effects.js';
 import { paintMapImage } from './minimap.js';
 import { MISSIONS } from './missions.js';
 import { stageShot } from './shots.js';
@@ -98,6 +98,7 @@ resize();
 function showBoardSession(index) {
   game.selected = index;
   game.session = newSession(index, seed);
+  showReplayPath(world.fx, null);
   poseForBoard(game.session);
   world.setSession(game.session);
   placeOrbit(game.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
@@ -337,6 +338,7 @@ function runGame() {
           }
           session.award = recordSortie(game.career, session);
           saveBest();
+          showReplayPath(world.fx, session.state === 'complete' ? null : session.report?.path);
           if (session.state === 'crashed') placeOrbit(session.aircraft, -0.8, 26, 7, new THREE.Vector3(6, 1, 6));
           else placeOrbit(session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
         }
@@ -384,7 +386,12 @@ function runShot(name) {
     poseForBoard(scene.session);
     placeOrbit(scene.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
   }
-  if (scene.screen === 'result') placeOrbit(scene.session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
+  if (scene.screen === 'result' && scene.session.state === 'complete') placeOrbit(scene.session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
+  if (scene.screen === 'result' && scene.session.state !== 'complete') {
+    if (scene.session.state === 'crashed') startWreck(world.fx, scene.session.aircraft);
+    showReplayPath(world.fx, scene.session.report?.path);
+    placeOrbit(scene.session.aircraft, -0.8, 60, 22, new THREE.Vector3(6, 1, 6));
+  }
   // The settle steps run through the game's own event handling, so a strike or a landing in
   // them raises the same callouts and camera shake as in play.
   game.time = time;

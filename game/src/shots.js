@@ -81,6 +81,15 @@ export function stageShot(name, seed) {
     });
     return { screen: 'result', session, view: 'orbit', pilot: null, settle: 0, award: true, career: SHOT_CAREER };
   }
+  if (name === 'crash') {
+    // The storm landing, hauled into a stall on a low, slow final: the crash report and its replay.
+    const session = createSession('storm', seed);
+    const pilot = pilotFor(session);
+    const t = runwayThreshold(AIRSTRIPS[0], false);
+    flyUntil(session, pilot, (s) => Math.hypot(s.aircraft.pos.x - t.x, s.aircraft.pos.z - t.z) < 2600, 240);
+    flyUntil(session, () => ({ pitch: 1, roll: 0.35, yaw: 0, throttle: 0 }), () => false, 60);
+    return { screen: 'result', session, view: 'orbit', pilot: null, settle: 0, award: true, career: SHOT_CAREER };
+  }
   if (name === 'rescue') {
     const session = createSession('rescue', seed);
     const boat = session.mission.boat;

@@ -12,7 +12,7 @@ import { createStormVisuals, updateStormVisuals } from './storm-visuals.js';
 import { createAircraftModel, poseAircraftModel } from './aircraft-model.js';
 import { VIEW_CHASE, VIEW_COCKPIT, createCameraRig, updateCamera } from './chase-camera.js';
 import { createRingMarkers, updateRingMarkers } from './ring-markers.js';
-import { createEffects, updateEffects, updateRescueProps } from './effects.js';
+import { createEffects, updateEffects, updateReplayPath, updateRescueProps } from './effects.js';
 import { stormGrip } from './storm-front.js';
 import { terrainHeight } from './terrain-height.js';
 
@@ -80,6 +80,7 @@ export function createWorldScene(canvas) {
     updateCamera(rig, a, dt, snap);
     updateEffects(fx, a, model, dt, time);
     updateRescueProps(fx, session, time);
+    updateReplayPath(fx, time);
     if (rings && ringSession === session) updateRingMarkers(rings, session, time);
     updatePapi(settlements, camera.position);
     updateWindsocks(settlements, windsockPose(session.lastWind), time);
