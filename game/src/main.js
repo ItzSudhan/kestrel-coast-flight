@@ -88,7 +88,7 @@ function showBoardSession(index) {
 
 const BOARD_ORBIT = { angle: -1.05, radius: 15, height: 1.6, shift: new THREE.Vector3(0, -2.4, 0) };
 /** After landing the camera looks back west into the sunset over the aircraft, with the card to the right. */
-const RESULT_ORBIT = { angle: 1.95, radius: 19.5, height: 3.4, shift: new THREE.Vector3(-1.6, 0.9, -5.2) };
+const RESULT_ORBIT = { angle: 1.95, radius: 16, height: 3.0, shift: new THREE.Vector3(-1.3, 0.9, -4.4) };
 
 function placeOrbit(aircraft, angle, radius, height, shift) {
   const rig = world.rig;
