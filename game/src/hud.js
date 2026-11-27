@@ -7,7 +7,7 @@
 // (drama-callout.js).
 import { drawSixPack } from './gauges.js';
 import { drawMinimap } from './minimap.js';
-import { clock } from './missions.js';
+import { clientState, clock } from './missions.js';
 import { stormEta } from './storm-front.js';
 import { drawPortrait, speakerOf } from './radio-portraits.js';
 import { AIRSTRIPS, landingEnd, runwayThreshold } from './places.js';
@@ -135,7 +135,7 @@ function fuelPlanPill(g, cx, cy, session) {
 function objectivesPanel(g, x, y, session) {
   const w = 316;
   const rows = session.objectives.length;
-  const h = 100 + rows * 30;
+  const h = 120 + rows * 30;
   panel(g, x, y, w, h);
   const m = session.mission;
   text(g, `SORTIE ${m.number} · ${m.title.toUpperCase()}`, x + 14, y + 20, 17, AMBER);
@@ -145,8 +145,11 @@ function objectivesPanel(g, x, y, session) {
   text(g, `T ${clock(session.time)}`, x + w - 14, y + 44, 16, overPar ? RED : '#ffffff', 'right', 800);
   const client = speakerOf(m.client.who);
   text(g, `FOR ${client.name} · ${client.role.toUpperCase()}`, x + 14, y + 67, 13, client.colour, 'left', 800);
+  const state = clientState(session);
+  const blink = state.urgent && Math.floor(session.time * 2) % 2 === 0;
+  text(g, state.text, x + 14, y + 87, Math.min(13, (13 * (w - 28)) / measure(g, state.text, 13, 800)), state.urgent ? (blink ? '#ff8a75' : RED) : '#ffffff', 'left', 800);
   session.objectives.forEach((o, i) => {
-    const ry = y + 98 + i * 30;
+    const ry = y + 118 + i * 30;
     const next = !o.done && session.objectives.slice(0, i).every((p) => p.done || p.id === 'par');
     g.strokeStyle = o.done ? GREEN : next ? AMBER : 'rgba(246,236,216,0.55)';
     g.lineWidth = 2;

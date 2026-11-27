@@ -4,7 +4,10 @@
 // without a result. Run: node tools/fuzz-sorties.mjs [seeds]
 import { STEP } from '../game/src/config.js';
 import { approachInfo, createSession, dropCrate, predictCrate, readouts, stepSession, toggleFlaps, toggleGear } from '../game/src/game-session.js';
-import { MISSIONS } from '../game/src/missions.js';
+import { MISSIONS, clientState } from '../game/src/missions.js';
+import { fuelPlanLine } from '../game/src/fuel-planner.js';
+import { damageReport } from '../game/src/damage-model.js';
+import { answerCrisis } from '../game/src/game-session.js';
 import { createRandom } from '../game/src/random.js';
 import { pilotHint } from '../game/src/pilot-hints.js';
 
@@ -41,6 +44,10 @@ for (const mission of MISSIONS) {
           approachInfo(session);
           predictCrate(session);
           pilotHint(session, approachInfo(session));
+          clientState(session);
+          damageReport(a);
+          if (!session.fuelPlan || !fuelPlanLine(session.fuelPlan)) throw new Error('no fuel plan');
+          if (session.crisis?.state === 'open' && random() < 0.3) answerCrisis(session, random() < 0.5 ? 1 : 2);
           const values = [a.pos.x, a.pos.y, a.pos.z, a.vel.x, a.vel.y, a.vel.z, ...a.q, a.fuel, r.kt, r.altFt, r.headingDeg, session.storm.km];
           if (!values.every(finite)) throw new Error(`non-finite state at step ${step}: ${values.join(',')}`);
         }

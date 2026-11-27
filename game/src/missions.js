@@ -138,6 +138,29 @@ export function scoreSortie(session) {
   return { objectivePoints, landingPoints, fuelPoints, timePoints, total, stars };
 }
 
+/**
+ * How the islander the sortie is for is faring right now, for the checklist: the boats steering
+ * by the lit beacons, the insulin's due time, Finn getting colder in the skiff until the crate
+ * reaches him, or the last strip's light. Returns { text, urgent }.
+ */
+export function clientState(session) {
+  const m = session.mission;
+  if (m.id === 'rings') {
+    const lit = session.rings.filter((r) => r.passed).length;
+    return { text: lit === session.rings.length ? 'ALL BEACONS LIT · THE FLEET IS SAFE' : `${lit}/${session.rings.length} BEACONS LIT · BOATS STEERING HOME`, urgent: lit < 4 };
+  }
+  if (m.id === 'mail') {
+    const left = m.par - session.time;
+    return { text: left > 0 ? `MRS KERR'S INSULIN DUE IN ${clock(left)}` : 'INSULIN OVERDUE · MRS KERR IS WAITING', urgent: left < 60 };
+  }
+  if (m.id === 'rescue') {
+    if (session.crate?.landed && session.crate.missBy <= 60) return { text: 'FINN HAS THE CRATE · WARM AND WAITING', urgent: false };
+    const cold = Math.min(100, Math.round(20 + session.time * 0.22));
+    return { text: `FINN ADRIFT · COLD ${cold}%`, urgent: cold > 60 };
+  }
+  return { text: session.storm.closed ? 'THE COAST IS CLOSED · GET DOWN' : `LAST STRIP OPEN · LIGHT FAILING`, urgent: session.storm.km < 1 };
+}
+
 /** Clock text m:ss. */
 export function clock(seconds) {
   const s = Math.max(0, Math.floor(seconds));
