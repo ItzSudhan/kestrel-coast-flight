@@ -265,7 +265,7 @@ function radioPanel(g, x, y, w, h, session) {
   drawPortrait(g, x + 12, y + 34, 68, who);
   const speaker = speakerOf(who);
   text(g, speaker.name, x + 90, y + 46, 16, speaker.colour, 'left', 900);
-  text(g, speaker.role, x + 90, y + 66, 12, 'rgba(246,236,216,0.7)', 'left', 600);
+  text(g, speaker.role, x + 90, y + 66, Math.min(12, (12 * (w - 160)) / measure(g, speaker.role, 12, 600)), 'rgba(246,236,216,0.7)', 'left', 600);
   // The other end of the conversation, listening.
   const other = who === 'pilot' ? (session.mission.client.who === 'pilot' ? 'radio' : session.mission.client.who) : 'pilot';
   g.globalAlpha = 0.8;

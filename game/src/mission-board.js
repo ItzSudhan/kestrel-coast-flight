@@ -1,7 +1,7 @@
 // The mission board, the game's title screen: KESTREL COAST over the parked KC-9, the storm's
 // distance, and the four sorties as cards with their goal, par, fuel load, storm distance,
 // objectives and best stars. 1-4 or the arrows pick, Enter flies.
-import { FONT, measure, panel, text } from './hud-paint.js';
+import { measure, panel, text, wrap } from './hud-paint.js';
 import { MISSIONS, clock } from './missions.js';
 import { drawPortrait, speakerOf } from './radio-portraits.js';
 import { careerUpgrades, rankOf } from './pilot-career.js';
@@ -131,7 +131,7 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time, career 
   text(g, 'The keepers of Gannet Light need supplies before the storm shuts the coast.', 44, 192, 17, 'rgba(255,244,224,0.9)', 'left', 600);
 
   const cardW = 292;
-  const cardH = 262;
+  const cardH = 300;
   const gap = 14;
   const total = MISSIONS.length * cardW + (MISSIONS.length - 1) * gap;
   const left = (W - total) / 2;
@@ -160,20 +160,14 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time, career 
     const client = speakerOf(m.client.who);
     drawPortrait(g, x + 88, y + 70, 22, m.client.who);
     text(g, `FOR ${client.name}`, x + 116, y + 82, 12, client.colour, 'left', 900);
-    g.font = `600 14px ${FONT}`;
-    const words = m.blurb.split(' ');
-    let line = '';
-    let row = 0;
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word;
-      if (g.measureText(test).width > cardW - 30) {
-        text(g, line, x + 16, y + 106 + row * 19, 14, 'rgba(255,244,224,0.88)', 'left', 600);
-        line = word;
-        row += 1;
-      } else line = test;
-    }
-    text(g, line, x + 16, y + 100 + row * 19, 14, 'rgba(255,244,224,0.88)', 'left', 600);
-    const statY = y + 178;
+    wrap(g, m.blurb, cardW - 30, 14).slice(0, 3).forEach((line, row) => text(g, line, x + 16, y + 106 + row * 19, 14, 'rgba(255,244,224,0.88)', 'left', 600));
+    // Why it matters, in the islander's own words.
+    g.fillStyle = 'rgba(255,255,255,0.05)';
+    g.fillRect(x + 12, y + 160, cardW - 24, 44);
+    g.fillStyle = client.colour;
+    g.fillRect(x + 12, y + 160, 3, 44);
+    wrap(g, m.client.why, cardW - 44, 13, 700).slice(0, 2).forEach((line, row) => text(g, line, x + 24, y + 172 + row * 18, 13, client.colour, 'left', 700));
+    const statY = y + 218;
     const stat = (label, value, sx) => {
       text(g, label, sx, statY, 11, 'rgba(255,196,130,0.85)', 'left', 800);
       text(g, value, sx, statY + 20, 18, '#ffffff', 'left', 800);
