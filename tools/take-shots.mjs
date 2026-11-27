@@ -125,6 +125,7 @@ try {
       await key('KeyD', 'd', 700);
       await sleep(2500);
       if (args.includes('--map')) await key('KeyM', 'm');
+      if (args.includes('--help')) await key('KeyH', 'h');
       await sleep(300);
     } else {
       await key('KeyC', 'c');

@@ -9,7 +9,7 @@ import { approachInfo, createSession, dropCrate, readouts, stepSession, toggleFl
 import { createWorldScene } from './world-scene.js';
 import { shakeCamera } from './chase-camera.js';
 import { drawCockpitPanel } from './cockpit-panel.js';
-import { drawFlightHud, text } from './hud.js';
+import { drawFlightHud, drawFlyingNotes, text } from './hud.js';
 import { drawMissionBoard, driftOnBoard, poseForBoard } from './mission-board.js';
 import { drawResultCard } from './result-card.js';
 import { createEngineAudio } from './engine-audio.js';
@@ -178,6 +178,10 @@ function handleActions(actions) {
       game.screen = game.screen === 'paused' ? 'fly' : 'paused';
       continue;
     }
+    if (action === 'help') {
+      game.screen = game.screen === 'help' ? 'fly' : 'help';
+      continue;
+    }
     if (game.screen !== 'fly') {
       if (action === 'confirm') game.screen = 'fly';
       if (action === 'retry') startSortie(game.selected);
@@ -247,8 +251,9 @@ function drawOverlay() {
     g.fillStyle = 'rgba(5,6,10,0.6)';
     g.fillRect(0, 0, W, H);
     text(g, 'PAUSED', W / 2, H / 2 - 20, 56, '#fff4e0', 'center', 900);
-    text(g, 'P / ESC FLY ON · T RESTART THE SORTIE · BACKSPACE MISSION BOARD', W / 2, H / 2 + 30, 16, '#ffb347', 'center', 800);
+    text(g, 'P / ESC FLY ON · T RESTART THE SORTIE · BACKSPACE MISSION BOARD · H HOW TO FLY', W / 2, H / 2 + 30, 16, '#ffb347', 'center', 800);
   }
+  if (game.screen === 'help') drawFlyingNotes(g, W, H);
 }
 
 function runGame() {
@@ -313,7 +318,7 @@ function runGame() {
   });
   // Ctrl is the throttle-down key, and Ctrl+W would close the tab mid-sortie: ask first.
   window.addEventListener('beforeunload', (event) => {
-    if (game.screen === 'fly' || game.screen === 'paused') {
+    if (game.screen === 'fly' || game.screen === 'paused' || game.screen === 'help') {
       event.preventDefault();
       event.returnValue = '';
     }

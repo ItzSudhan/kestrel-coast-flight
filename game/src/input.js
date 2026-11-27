@@ -7,7 +7,7 @@ export const ACTIONS = ['flaps', 'gear', 'camera', 'map', 'pause', 'drop', 'conf
 const KEY_ACTIONS = {
   KeyF: 'flaps', KeyG: 'gear', KeyC: 'camera', KeyM: 'map', KeyP: 'pause', Escape: 'back', KeyX: 'drop',
   Enter: 'confirm', Space: 'confirm', KeyT: 'retry', Digit1: 'pick1', Digit2: 'pick2', Digit3: 'pick3', Digit4: 'pick4', KeyI: 'invert', KeyN: 'audio',
-  ArrowLeft: 'left', ArrowRight: 'right', Backspace: 'board',
+  ArrowLeft: 'left', ArrowRight: 'right', Backspace: 'board', KeyH: 'help',
 };
 
 export function createInput(target = window) {

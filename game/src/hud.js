@@ -475,7 +475,7 @@ function windReadout(g, cx, y, wind) {
 function controlsStrip(g, W, H) {
   g.fillStyle = 'rgba(8,9,14,0.7)';
   g.fillRect(0, H - 22, W, 22);
-  text(g, 'W/S PITCH · A/D ROLL · Q/E RUDDER · SHIFT/CTRL THROTTLE · F FLAPS · G GEAR · B BRAKES · X DROP · R REFUEL · C CAMERA · M MAP · P PAUSE', W / 2, H - 11, 13, 'rgba(246,236,216,0.82)', 'center', 700);
+  text(g, 'W/S PITCH · A/D ROLL · Q/E RUDDER · SHIFT/CTRL THROTTLE · F FLAPS · G GEAR · B BRAKES · X DROP · R REFUEL · C CAMERA · M MAP · P PAUSE · H HELP', W / 2, H - 11, 13, 'rgba(246,236,216,0.82)', 'center', 700);
 }
 
 function banner(g, W, frame) {
@@ -491,6 +491,32 @@ function banner(g, W, frame) {
   g.lineWidth = 2;
   g.stroke();
   text(g, b.text, W / 2, 262, 30, b.colour, 'center', 800);
+}
+
+/** The H card: how to fly the KC-9, in six lines, over the paused-looking frame. */
+export function drawFlyingNotes(g, W, H) {
+  const w = 760;
+  const h = 380;
+  const x = (W - w) / 2;
+  const y = (H - h) / 2 - 20;
+  g.fillStyle = 'rgba(5,6,10,0.55)';
+  g.fillRect(0, 0, W, H);
+  panel(g, x, y, w, h);
+  text(g, 'HOW TO FLY THE KC-9', x + 28, y + 34, 22, AMBER, 'left', 900);
+  const notes = [
+    ['TAKE OFF', 'Shift to full power, steer the centreline with Q/E, ease back on S at 55 kt.'],
+    ['TURN', 'Bank with A/D; she holds her climb or descent. Steep turns need speed.'],
+    ['STALL', 'Below ~49 kt clean (~44 kt full flaps) the wing quits. Nose down (W), power up.'],
+    ['LAND', 'Gear down (G), full flaps (F), 60–65 kt, ride the PAPI: two red, two white.'],
+    ['FUEL & DAMAGE', 'Throttle burns fuel steeply. Hold R stopped on a strip to refuel and repair.'],
+    ['STORM', 'Watch the front’s clock. When it reaches the coast, get down on a strip.'],
+  ];
+  notes.forEach(([head, body], i) => {
+    const ry = y + 78 + i * 44;
+    text(g, head, x + 28, ry, 15, '#ffffff', 'left', 900);
+    text(g, body, x + 170, ry, 15, 'rgba(246,236,216,0.9)', 'left', 600);
+  });
+  text(g, 'H TO CLOSE', x + w / 2, y + h - 22, 14, AMBER, 'center', 800);
 }
 
 /** The next thing the pilot is flying to, for the tape bug and the screen marker. */

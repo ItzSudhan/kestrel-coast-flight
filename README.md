@@ -42,6 +42,7 @@ Pick a sortie on the mission board with **1–4** (or **← / →**) and press *
 | C | Chase view / cockpit view |
 | M | Full map |
 | P / Esc | Pause (Backspace while paused returns to the mission board) |
+| H | How-to-fly card (pauses the sortie) |
 | T | Fly the sortie again |
 | Hold left mouse | Steer with the mouse |
 | N | Mute |
