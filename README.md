@@ -18,7 +18,7 @@ Then open http://localhost:8080 in desktop Chrome. The game is plain static file
 
 ## How to play
 
-Pick a sortie on the mission board with **1–4** and press **Enter**. Every sortie runs against the **storm front**: the bar at the top shows how far out it is and how long you have before it closes the coast.
+Pick a sortie on the mission board with **1–4** (or **← / →**) and press **Enter**. Every sortie runs against the **storm front**: the bar at the top shows how far out it is and how long you have before it closes the coast.
 
 - **Fly the numbers.** Lift grows with airspeed. Below about 49 kt clean (about 44 kt with full flaps) the wing stalls: the buzzer sounds, the STALL light comes on, the nose drops and a wing goes. Steep turns need more lift, so they bleed speed and can stall you at low speed.
 - **Mind the fuel.** Fuel burn rises steeply with throttle, and the fuel panel shows your endurance at the current power setting. If the engine quits you glide.
@@ -61,7 +61,7 @@ Pick a sortie on the mission board with **1–4** and press **Enter**. Every sor
 
 The game is plain ES modules under `game/src`, with three.js vendored at `game/vendor/three/`. Each file has one job:
 
-- **Simulation** (also runs in Node): `flight-physics.js`, `landing-grader.js`, `game-session.js`, `missions.js`, `rings-course.js`, `storm-front.js`, `terrain-height.js`, `places.js`, `autopilot.js`
+- **Simulation** (also runs in Node): `flight-physics.js`, `flight-math.js`, `landing-grader.js`, `game-session.js`, `missions.js`, `rings-course.js`, `storm-front.js`, `terrain-height.js`, `places.js`, `autopilot.js`, `config.js`, `random.js`
 - **World**: `world-terrain.js`, `world-sea.js`, `world-sky.js`, `town-and-airstrips.js`, `lighthouse.js`, `storm-visuals.js`, `aircraft-model.js`, `ring-markers.js`, `effects.js`, `chase-camera.js`, `world-scene.js`
 - **Instruments and UI**: `gauges.js`, `hud.js`, `cockpit-panel.js`, `minimap.js`, `radio-portraits.js`, `mission-board.js`, `result-card.js`
 - **Other**: `input.js`, `pilot-hints.js`, `engine-audio.js` (all sound is synthesised with WebAudio), `shots.js` (seeded screenshot scenes) and `main.js`
