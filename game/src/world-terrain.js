@@ -33,7 +33,7 @@ const ROCK = new THREE.Color('#a8876b');
 const ROCK_LIGHT = new THREE.Color('#c9a888');
 const PEAT = new THREE.Color('#7b6a4c');
 
-const FIELDS = ['#d9b85c', '#a9b64e', '#9c7a4c', '#c7c16a', '#86a845', '#e0c77a'].map((c) => new THREE.Color(c));
+const FIELDS = ['#dcbc5e', '#a8c457', '#c9c75f', '#e6d27e', '#82b04c', '#b48a56', '#93bb55'].map((c) => new THREE.Color(c));
 
 /** Farm fields: a patchwork on low, gentle ground near the town and the airfield. */
 function fieldColour(out, x, z, height, steep, cc, rr) {
