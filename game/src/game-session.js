@@ -287,9 +287,9 @@ export function stepSession(session, controls, dt) {
     if (event.type === 'stopped' && a.firstTouchdown) {
       const here = nearStrip(a);
       if (here) finishLanding(session, here);
-      else if (a.belly) {
+      else if (a.belly || !a.engineRunning) {
         session.state = 'failed';
-        session.result = { ...scoreSortie(session), cause: 'Belly-landed off the field', stamp: 'STRANDED' };
+        session.result = { ...scoreSortie(session), cause: a.belly ? 'Belly-landed off the field' : 'Down off the field with a dead engine', stamp: 'STRANDED' };
         say(session, SPEAKER_RADIO, 'Kestrel Radio: We see you down out there. Stay with her, the launch is coming.');
         session.events.push({ type: 'sortie-over' });
       } else if (!session.offFieldWarned) {
