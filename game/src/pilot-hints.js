@@ -7,6 +7,7 @@ export function pilotHint(session, approach) {
   const a = session.aircraft;
   const kt = a.ias * KT;
   if (session.state !== 'flying') return null;
+  if (session.refuelling) return `REFUELLING ${Math.round(a.fuel)}% · REPAIRING · THE STORM KEEPS COMING`;
   if (a.onGround) {
     const stopped = kt < 2;
     if (stopped && a.firstTouchdown) return 'HOLD R TO REFUEL AND REPAIR · SHIFT TO TAKE OFF AGAIN';
