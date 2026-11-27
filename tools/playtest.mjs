@@ -4,7 +4,7 @@
 // landing to check the crash causes. Run: node tools/playtest.mjs
 import { STEP, KT } from '../game/src/config.js';
 import { createSession, dropCrate, predictCrate, stepSession, toggleFlaps, toggleGear, readouts } from '../game/src/game-session.js';
-import { approach, flyRing, flyToward, takeoff, homeStrip } from '../game/src/autopilot.js';
+import { approach, createSortiePilot, flyRing, flyToward, takeoff, homeStrip } from '../game/src/autopilot.js';
 import { createAircraft, stallSpeed } from '../game/src/flight-physics.js';
 import { gradeLanding, judgeContact } from '../game/src/landing-grader.js';
 
@@ -115,6 +115,13 @@ const slowRoll = rollRateAt(55);
 const fastRoll = rollRateAt(110);
 check('roll answers at 55 kt', slowRoll > 0.6, `${slowRoll.toFixed(2)} rad/s`);
 check('roll answers at 110 kt', fastRoll > slowRoll, `${fastRoll.toFixed(2)} rad/s`);
+
+// 4b. The mail run is winnable at a cruise setting: Puffin Cay reached and landed with the reserve.
+const mailRun = createSession('mail', 1);
+const mailPilot = createSortiePilot(mailRun, (name) => (name === 'gear' ? toggleGear(mailRun) : toggleFlaps(mailRun)));
+for (let step = 0; step < 60 * 600 && mailRun.state === 'flying'; step += 1) stepSession(mailRun, mailPilot(), STEP);
+check('the mail run lands at Puffin Cay', mailRun.state === 'complete' && mailRun.landing?.strip.id === 'puffin', `${mailRun.state}, ${mailRun.landing?.grade}`);
+check('the mail run keeps the 8% fuel reserve at cruise power', mailRun.aircraft.fuel >= 8, `${mailRun.aircraft.fuel.toFixed(1)}% left`);
 
 // 5. Search and rescue: run in low over the flare boat and drop the crate with a lead.
 const rescue = createSession('rescue', 4);
