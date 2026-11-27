@@ -108,6 +108,7 @@ export function stepCrisis(session, say) {
   const a = session.aircraft;
   if (session.squall && !crisis.struck && crisis.strikeAt !== null && session.time >= crisis.strikeAt && !a.onGround && !a.crashed) {
     crisis.struck = true;
+    session.struckAt = session.time;
     lightningStrike(a);
     boltAt(session.storm, a.pos.x, 0.6);
   }

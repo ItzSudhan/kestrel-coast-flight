@@ -13,6 +13,7 @@ import { createAircraftModel, poseAircraftModel } from './aircraft-model.js';
 import { VIEW_CHASE, VIEW_COCKPIT, createCameraRig, updateCamera } from './chase-camera.js';
 import { createRingMarkers, updateRingMarkers } from './ring-markers.js';
 import { createEffects, updateEffects, updateReplayPath, updateRescueProps } from './effects.js';
+import { createStrikeBolt, updateStrikeBolt } from './lightning-strike-fx.js';
 import { stormGrip } from './storm-front.js';
 import { terrainHeight } from './terrain-height.js';
 
@@ -50,6 +51,7 @@ export function createWorldScene(canvas) {
   const model = createAircraftModel();
   scene.add(model.root);
   const fx = createEffects(scene);
+  const strikeBolt = createStrikeBolt(scene);
   let rings = null;
   let ringSession = null;
 
@@ -78,6 +80,7 @@ export function createWorldScene(canvas) {
     model.gear.visible = model.gear.visible && view !== VIEW_COCKPIT;
     model.root.updateMatrixWorld(true);
     updateCamera(rig, a, dt, snap);
+    updateStrikeBolt(strikeBolt, session, camera);
     updateEffects(fx, a, model, dt, time);
     updateRescueProps(fx, session, time);
     updateReplayPath(fx, time);
