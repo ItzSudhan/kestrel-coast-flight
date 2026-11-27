@@ -256,7 +256,7 @@ export function createAircraftModel() {
 
   // Nav lights.
   const navLights = [];
-  for (const [x, y, z, c] of [[-6.25, 1.0, -0.95, '#ff3b30'], [6.25, 1.0, -0.95, '#3bff6a'], [0, 2.35, 4.6, '#ffffff']]) {
+  for (const [x, y, z, c] of [[-6.28, 1.29, -1.0, '#ff3b30'], [6.28, 1.29, -1.0, '#3bff6a'], [0, 2.35, 4.6, '#ffffff']]) {
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowSprite(), color: c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     glow.position.set(x, y, z);
     glow.scale.set(1.3, 1.3, 1);
@@ -266,7 +266,7 @@ export function createAircraftModel() {
   }
   const strobe = navLights[2];
 
-  return { root, body, cabin, prop, blades, disc, ailerons, flaps, elevator, rudder: rudderPivot, gear, strobe, wingTips: [new THREE.Vector3(-6.2, 1.0, -0.5), new THREE.Vector3(6.2, 1.0, -0.5)] };
+  return { root, body, cabin, prop, blades, disc, ailerons, flaps, elevator, rudder: rudderPivot, gear, strobe, wingTips: [new THREE.Vector3(-6.2, 1.28, -0.4), new THREE.Vector3(6.2, 1.28, -0.4)] };
 }
 
 /** Pose the model from the aircraft state and the pilot's inputs. */
