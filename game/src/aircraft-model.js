@@ -77,10 +77,11 @@ function tailLetters() {
   canvas.width = 512;
   canvas.height = 128;
   const g = canvas.getContext('2d');
-  g.fillStyle = '#203553';
-  g.font = 'bold 84px sans-serif';
+  g.fillStyle = '#f1e8d6';
+  g.font = 'bold 104px sans-serif';
+  g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText('KC-9  KESTREL', 12, 66);
+  g.fillText('KC-9', 256, 68);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
@@ -113,7 +114,7 @@ export function createAircraftModel() {
   const navy = new THREE.MeshStandardMaterial({ color: NAVY, flatShading: true, roughness: 0.55 });
   const metal = new THREE.MeshStandardMaterial({ color: '#8d9098', roughness: 0.35, metalness: 0.6 });
   const tyre = new THREE.MeshStandardMaterial({ color: '#1d1d20', roughness: 0.9 });
-  const glass = new THREE.MeshStandardMaterial({ color: '#4a6c8c', roughness: 0.08, metalness: 0.3, emissive: '#7a5238', emissiveIntensity: 0.45 });
+  const glass = new THREE.MeshStandardMaterial({ color: '#7fa6c8', roughness: 0.06, metalness: 0.2, emissive: '#8a6a7a', emissiveIntensity: 0.55 });
 
   // The cabin shell: hidden from the pilot's seat, where the panel overlay stands in for it.
   const cabin = new THREE.Group();
@@ -128,10 +129,6 @@ export function createAircraftModel() {
     const pane = part(new THREE.BoxGeometry(0.05, 0.52, 1.0), glass, side * 0.68, 0.55, -1.45);
     const rear = part(new THREE.BoxGeometry(0.05, 0.46, 0.8), glass, side * 0.66, 0.53, -0.2);
     cabin.add(pane, rear);
-    const letters = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.48), new THREE.MeshBasicMaterial({ map: tailLetters(), transparent: true, depthWrite: false }));
-    letters.position.set(side * 0.5, 0.35, 1.9);
-    letters.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
-    cabin.add(letters);
   }
 
   // High wing with tips, ailerons, flaps and struts.
@@ -187,6 +184,13 @@ export function createAircraftModel() {
   finGeometry.translate(0.05, 0.02, 0);
   const fin = part(finGeometry, rust, 0, 0, 0);
   tail.add(fin);
+  const lettering = tailLetters();
+  for (const side of [-1, 1]) {
+    const letters = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.29), new THREE.MeshBasicMaterial({ map: lettering, transparent: true, depthWrite: false }));
+    letters.position.set(side * 0.075, 0.62, -0.08);
+    letters.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+    tail.add(letters);
+  }
   const rudderPivot = new THREE.Group();
   rudderPivot.position.set(0, 0.06, 0.45);
   const rudderGeometry = new THREE.BoxGeometry(0.08, 1.7, 0.42);

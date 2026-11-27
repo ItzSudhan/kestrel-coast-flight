@@ -42,8 +42,9 @@ void main() {
   vec2 p = vWorld.xz;
   float t = time;
   vec3 n = vec3(0.0, 1.0, 0.0);
-  n.x += 0.07 * cos(p.x * 0.019 + p.y * 0.011 + t * 0.8) + 0.045 * cos(p.x * 0.043 - p.y * 0.029 + t * 1.25) + 0.03 * cos(p.x * 0.12 + p.y * 0.083 + t * 2.3) + 0.018 * cos(p.x * 0.31 - p.y * 0.27 + t * 3.1);
-  n.z += 0.06 * cos(p.y * 0.017 - p.x * 0.009 + t * 0.7) + 0.04 * cos(p.y * 0.051 + p.x * 0.023 + t * 1.4) + 0.028 * cos(p.y * 0.14 - p.x * 0.07 + t * 2.0) + 0.018 * cos(p.y * 0.29 + p.x * 0.33 + t * 2.9);
+  float warp = sin(p.x * 0.0041 + p.y * 0.0027) * 9.0 + sin(p.y * 0.0063 - p.x * 0.0019) * 7.0;
+  n.x += 0.07 * cos(p.x * 0.019 + p.y * 0.011 + t * 0.8 + warp * 0.3) + 0.045 * cos(p.x * 0.043 - p.y * 0.029 + t * 1.25 + warp) + 0.024 * cos(p.x * 0.117 + p.y * 0.083 + t * 2.3 + warp * 1.7) + 0.012 * cos(p.x * 0.29 - p.y * 0.23 + t * 3.1 - warp * 2.3);
+  n.z += 0.06 * cos(p.y * 0.017 - p.x * 0.009 + t * 0.7 - warp * 0.4) + 0.04 * cos(p.y * 0.051 + p.x * 0.023 + t * 1.4 + warp * 1.3) + 0.022 * cos(p.y * 0.137 - p.x * 0.071 + t * 2.0 - warp * 1.9) + 0.012 * cos(p.y * 0.27 + p.x * 0.31 + t * 2.9 + warp * 2.1);
   n = normalize(n);
   vec3 view = cameraPosition - vWorld;
   float dist = length(view);

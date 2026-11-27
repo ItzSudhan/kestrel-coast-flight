@@ -60,7 +60,7 @@ The game is plain ES modules under `game/src`, with three.js vendored at `game/v
 - **Simulation** (also runs in Node): `flight-physics.js`, `landing-grader.js`, `game-session.js`, `missions.js`, `rings-course.js`, `storm-front.js`, `terrain-height.js`, `places.js`, `autopilot.js`
 - **World**: `world-terrain.js`, `world-sea.js`, `world-sky.js`, `town-and-airstrips.js`, `lighthouse.js`, `storm-visuals.js`, `aircraft-model.js`, `ring-markers.js`, `effects.js`, `chase-camera.js`, `world-scene.js`
 - **Instruments and UI**: `gauges.js`, `hud.js`, `cockpit-panel.js`, `minimap.js`, `radio-portraits.js`, `mission-board.js`, `result-card.js`
-- **Other**: `input.js`, `engine-audio.js` (all sound is synthesised with WebAudio), `shots.js` (seeded screenshot scenes) and `main.js`
+- **Other**: `input.js`, `pilot-hints.js`, `engine-audio.js` (all sound is synthesised with WebAudio), `shots.js` (seeded screenshot scenes) and `main.js`
 
 ### Tools
 
