@@ -58,6 +58,6 @@ function minutes(seconds) {
 export function fuelPlanLine(plan) {
   const head = `FUEL TO ${plan.name} ${Math.max(1, Math.round(plan.fuel))}%`;
   if (plan.status === 'short') return `${head} · ${Math.round(plan.reserve)}% SHORT · LAND NOW`;
-  const bingo = plan.bingoSeconds > 0 ? `BINGO IN ${minutes(plan.bingoSeconds)}` : 'BINGO · TURN NOW';
+  const bingo = plan.bingoSeconds >= 1 ? `BINGO IN ${minutes(plan.bingoSeconds)}` : 'BINGO · TURN NOW';
   return `${head} · RESERVE ${Math.max(0, Math.round(plan.reserve))}% · ${bingo}`;
 }

@@ -132,8 +132,8 @@ function showBanner(textValue, colour, seconds = 2) {
 }
 
 /** A big moment: a huge two-line callout that holds the screen for a few seconds. */
-function showMoment(headline, sub, colour, seconds = 3.5) {
-  game.banner = { text: headline, sub, colour, big: true, until: game.time + seconds };
+function showMoment(headline, sub, colour, seconds = 3.5, subSize = 19) {
+  game.banner = { text: headline, sub, subSize, colour, big: true, until: game.time + seconds };
 }
 
 function handleEvents(events) {
@@ -170,7 +170,7 @@ function handleEvents(events) {
     else if (e.type === 'lightning-strike') {
       shakeCamera(world.rig, 1);
       audio.thunder();
-      showMoment(`LIGHTNING STRIKE · ENGINE ${e.engine}%`, 'POWER DOWN · ROUGH RUNNING · KEEP HER FLYING', '#c9a8ff', 4);
+      showMoment('LIGHTNING STRIKE', `ENGINE ${e.engine}% · POWER −${Math.round(0.6 * (100 - e.engine))}%`, '#d6bcff', 4, 30);
       announce(`Lightning strike. Engine ${e.engine} percent.`);
     } else if (e.type === 'crisis') {
       showMoment('STORM CLOSING · YOUR CALL', '1 DIVERT · 2 PUSH THROUGH', '#ffcf5a', 3);
@@ -268,7 +268,7 @@ function drawOverlay() {
     return;
   }
   if (game.screen === 'result') {
-    drawResultCard(g, W, H, session);
+    drawResultCard(g, W, H, session, game.career, game.time);
     return;
   }
   const read = readouts(session);
@@ -384,12 +384,18 @@ function runShot(name) {
     placeOrbit(scene.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
   }
   if (scene.screen === 'result') placeOrbit(scene.session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
+  // The settle steps run through the game's own event handling, so a strike or a landing in
+  // them raises the same callouts and camera shake as in play.
+  game.time = time;
   for (let i = 0; i < scene.settle; i += 1) {
     controls = scene.pilot();
-    stepSession(scene.session, controls, STEP);
+    if (scene.answer && scene.session.crisis?.state === 'open' && i >= scene.answer.atStep) answerCrisis(scene.session, scene.answer.choice);
+    handleEvents(stepSession(scene.session, controls, STEP));
     time += STEP;
+    game.time = time;
     world.frame(scene.session, controls, STEP, time, scene.view, i === 0);
   }
+  if (scene.award) scene.session.award = recordSortie(game.career = createCareer(scene.career), scene.session);
   game.time = time;
   game.controls = controls;
   let painted = 0;

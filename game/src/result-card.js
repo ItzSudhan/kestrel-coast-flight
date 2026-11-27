@@ -1,10 +1,14 @@
 // The end of a sortie: a landing card with its rubber-stamp grade (GREASED IT, FIRM, BOUNCED,
 // OFF FIELD), touchdown speed, sink rate, centreline, fuel, time against par, the score sum and
-// stars; or a crash report with its cause line ("Stalled at 42 kt, 80 ft") and what was left.
-import { FONT, panel, text } from './hud.js';
+// stars; or a crash report (crash-report.js) with its cause line ("Stalled at 42 kt, 80 ft"),
+// what the last ten seconds did, a looping replay of that path and the lesson. Beside it, the
+// career panel and the islander the sortie was for (career-card.js).
+import { FONT, panel, text } from './hud-paint.js';
 import { drawStars } from './mission-board.js';
 import { clock } from './missions.js';
 import { runwayLocal } from './places.js';
+import { REPLAY_SECONDS } from './crash-report.js';
+import { drawCareerPanel, drawClientLine } from './career-card.js';
 
 const AMBER = '#ffb347';
 const STAMP = { good: '#4fe07a', fair: '#ffc94a', poor: '#ff6a4a' };
@@ -91,8 +95,58 @@ function touchdownDiagram(g, x, y, w, h, session) {
   text(g, `TOUCHDOWN ${past} M PAST THE THRESHOLD · STOPPED IN ${Math.round(Math.abs(stop.along - local.along))} M`, x + w / 2, y + h + 12, 12, 'rgba(255,196,130,0.9)', 'center', 800);
 }
 
-/** Draw the result card for a finished, crashed or storm-failed sortie. */
-export function drawResultCard(g, W, H, session) {
+/**
+ * The last ten seconds as a side view: height against time, red where the wing was stalled,
+ * the impact marked, and a marker that flies the path again every few seconds.
+ */
+function pathReplay(g, x, y, w, h, report, time) {
+  g.fillStyle = 'rgba(0,0,0,0.35)';
+  g.beginPath();
+  g.roundRect(x, y, w, h, 8);
+  g.fill();
+  const path = report.path;
+  text(g, `REPLAY · LAST ${REPLAY_SECONDS} S`, x + 12, y + 16, 13, '#ffb347', 'left', 900);
+  if (path.length < 2) return;
+  const top = Math.max(100, ...path.map((p) => p.ft)) * 1.1;
+  const px = (t) => x + 16 + ((t + REPLAY_SECONDS) / REPLAY_SECONDS) * (w - 32);
+  const py = (ft) => y + h - 14 - (ft / top) * (h - 44);
+  g.strokeStyle = 'rgba(255,255,255,0.15)';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(x + 16, py(0));
+  g.lineTo(x + w - 16, py(0));
+  g.stroke();
+  for (let i = 1; i < path.length; i += 1) {
+    g.strokeStyle = path[i].stalled ? '#ff5a45' : '#9fe8ff';
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(px(path[i - 1].t), py(path[i - 1].ft));
+    g.lineTo(px(path[i].t), py(path[i].ft));
+    g.stroke();
+  }
+  [0, Math.floor(path.length / 2)].forEach((i) => text(g, `${Math.round(path[i].ft)} FT · ${Math.round(path[i].kt)} KT`, px(path[i].t), py(path[i].ft) - 12, 11, '#ffffff', 'center', 800));
+  const end = path[path.length - 1];
+  g.strokeStyle = '#ff5a45';
+  g.lineWidth = 3.5;
+  g.beginPath();
+  g.moveTo(px(end.t) - 7, py(end.ft) - 7);
+  g.lineTo(px(end.t) + 7, py(end.ft) + 7);
+  g.moveTo(px(end.t) + 7, py(end.ft) - 7);
+  g.lineTo(px(end.t) - 7, py(end.ft) + 7);
+  g.stroke();
+  const loop = (time % (REPLAY_SECONDS * 0.6)) / (REPLAY_SECONDS * 0.6);
+  const k = Math.min(path.length - 1, Math.floor(loop * path.length));
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.arc(px(path[k].t), py(path[k].ft), 5, 0, Math.PI * 2);
+  g.fill();
+  text(g, `${path[k].t.toFixed(1)} S`, x + w - 12, y + 16, 12, 'rgba(255,255,255,0.8)', 'right', 800);
+}
+
+/** Draw the result card for a finished, crashed or storm-failed sortie, with the career beside it. */
+export function drawResultCard(g, W, H, session, career = null, time = 0) {
+  if (career) drawCareerPanel(g, 24, H - 282, W - 620, 258, career, session.award);
+  drawClientLine(g, 24, 24, W - 620, session);
   const result = session.result;
   const m = session.mission;
   const w = 520;
@@ -154,8 +208,13 @@ export function drawResultCard(g, W, H, session) {
     row(g, x + 24, ry, inner, 'Objectives', `${session.objectives.filter((o) => o.done).length} / ${session.objectives.length}`);
     ry += 34;
     row(g, x + 24, ry, inner, 'Storm', `${session.storm.km.toFixed(1)} KM`);
-    ry += 50;
-    text(g, crashed && result.cause?.startsWith('Stalled') ? 'Tip: keep the speed up in turns; lower the nose at the buzzer.' : 'Tip: flaps out, gear down, 60-65 kt over the numbers.', x + 24, ry, 15, 'rgba(255,244,224,0.85)', 'left', 600);
+    const report = session.report;
+    if (report) {
+      ry += 30;
+      text(g, report.summary, x + 24, ry, 15, '#ffc94a', 'left', 800);
+      pathReplay(g, x + 24, ry + 14, inner, 100, report, time);
+      text(g, `Lesson: ${report.lesson}`, x + 24, ry + 130, 14, 'rgba(255,244,224,0.9)', 'left', 600);
+    }
   }
   text(g, 'ENTER · MISSION BOARD     T · FLY AGAIN', x + w / 2, y + h - 22, 15, 'rgba(255,244,224,0.7)', 'center', 800);
 }

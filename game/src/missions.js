@@ -17,6 +17,9 @@ export const MISSIONS = [
     kind: 'Ring course',
     blurb: 'Light the eight beacon rings round the island and land runway 09 before the storm.',
     client: { who: 'keeper', why: 'The herring boats steer home by these beacons tonight.' },
+    thanks: 'Every beacon burning. The herring boats will find their way home tonight. Thank you, pilot.',
+    worry: 'The beacons are dark and the boats are still out there. Try again, while there is light.',
+    strikeReply: 'Gannet Light: I saw that bolt take you! Hold her steady — the boats are counting on you.',
     opening: [
       ['keeper', 'Gannet Light: Fly every beacon for me. The herring boats steer home by them tonight.'],
       ['radio', 'Kestrel Radio: Rings are lit, storm is twelve out. Wheels up when ready.'],
@@ -41,6 +44,9 @@ export const MISSIONS = [
     kind: 'Mail run',
     blurb: 'Carry the mail and the clinic’s insulin 7 km east to Puffin Cay on under half a tank.',
     client: { who: 'nurse', why: 'The clinic’s insulin is in the mail sack. No boat can cross tonight.' },
+    thanks: 'The insulin’s here and Mrs Kerr is asleep. You’ve made an old woman safe tonight.',
+    worry: 'No plane and no insulin. Please, try again before the storm closes us in.',
+    strikeReply: 'Puffin Cay: Was that lightning on you? Talk to me, Kestrel One!',
     opening: [
       ['nurse', 'Puffin Cay: The insulin is for old Mrs Kerr. Hurry, but come in one piece.'],
       ['radio', 'Kestrel Radio: Mail’s aboard. Fuel is thin — cruise, don’t race.'],
@@ -64,6 +70,9 @@ export const MISSIONS = [
     kind: 'Search & rescue',
     blurb: 'Finn Ardle’s skiff is adrift under the storm. Find the red flare, drop the crate, get home.',
     client: { who: 'skiff', why: 'Tobin’s grandson is adrift off the Skerry with a dead outboard.' },
+    thanks: 'Got the crate — blankets, a lamp and a radio! The lifeboat’s on its way. Tell Grandad I’m fine.',
+    worry: 'I can still hear your engine somewhere. Please come back.',
+    strikeReply: 'Skiff: That bolt hit you! Are you still flying?',
     opening: [
       ['skiff', 'Skiff: Motor’s dead and I’m drifting. Firing a flare now. Grandad, I’m sorry.'],
       ['keeper', 'Gannet Light: That’s my grandson out there. Look for red smoke, north-west of the Skerry.'],
@@ -88,6 +97,9 @@ export const MISSIONS = [
     kind: 'Storm landing',
     blurb: 'The front is on the coast. Rain, a gusting northerly crosswind, and one runway. Put her down.',
     client: { who: 'radio', why: 'Kestrel Field is the last strip open, and the light is going.' },
+    thanks: 'Wheels on the wet tarmac and not a scratch. The kettle’s on, Kestrel One. Welcome home.',
+    worry: 'Kestrel One, do you read? The launch is going out to you now.',
+    strikeReply: 'Kestrel Radio: You took a strike! Fly the aircraft, Kestrel One.',
     opening: [
       ['radio', 'Kestrel Radio: Front’s on us. Wind zero-two-zero at thirteen, gusting. Runway 09.'],
     ],

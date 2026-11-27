@@ -1,6 +1,6 @@
 [
   { "name": "1-cover.jpg", "query": "?shot=cover&seed=1" },
   { "name": "2-cockpit.jpg", "query": "?shot=cockpit&seed=1" },
-  { "name": "3-board.jpg", "query": "?shot=board&seed=1" },
-  { "name": "4-landing.jpg", "query": "?shot=result&seed=1" }
+  { "name": "3-divert.jpg", "query": "?shot=divert&seed=1" },
+  { "name": "4-career.jpg", "query": "?shot=career&seed=1" }
 ]

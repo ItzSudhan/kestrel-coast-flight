@@ -73,6 +73,8 @@ export function stormGrip(storm, x, z) {
  * finds the aircraft.
  */
 export function boltAt(storm, x, life = 0.5) {
-  storm.bolt = { x, seed: Math.floor(storm.random() * 100000), life };
   storm.flash = 1;
+  // A bolt already forking stays in the sky; the flash still lights it.
+  if (storm.bolt && storm.bolt.life > life) return;
+  storm.bolt = { x, seed: Math.floor(storm.random() * 100000), life };
 }

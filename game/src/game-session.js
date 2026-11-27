@@ -321,7 +321,10 @@ export function stepSession(session, controls, dt) {
     if (event.type === 'stall') say(session, SPEAKER_RADIO, 'Kestrel Radio: You’re stalling — nose down, power up!');
     if (event.type === 'engine-out') say(session, SPEAKER_PILOT, event.reason === 'fuel' ? 'Engine’s quit — tanks are dry!' : 'Engine’s gone. Gliding.');
     if (event.type === 'tree-strike') say(session, SPEAKER_PILOT, 'Clipped the treetops!');
-    if (event.type === 'lightning-strike') say(session, SPEAKER_PILOT, `We're hit! Lightning — engine's down to ${event.engine} percent.`);
+    if (event.type === 'lightning-strike') {
+      say(session, SPEAKER_PILOT, `We're hit! Lightning — engine's down to ${event.engine} percent.`);
+      say(session, session.mission.client.who, session.mission.strikeReply);
+    }
     if (event.type === 'gear-jammed') say(session, SPEAKER_PILOT, 'Gear’s taken a beating — it won’t lock. Belly landing.');
   }
   if (session.destination === 'puffin' && Math.hypot(a.pos.x - 5300, a.pos.z + 450) < 1800 && complete(session, 'reach-puffin')) {

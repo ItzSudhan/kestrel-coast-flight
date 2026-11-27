@@ -41,9 +41,9 @@ function bezel(g, x, y, r) {
   g.beginPath();
   g.arc(x, y, r * 0.98, 0, Math.PI * 2);
   g.fill();
-  const glow = g.createRadialGradient(x, y, r * 0.55, x, y, r * 0.98);
-  glow.addColorStop(0, 'rgba(255,170,90,0)');
-  glow.addColorStop(1, 'rgba(255,170,90,0.16)');
+  const glow = g.createRadialGradient(x, y, r * 0.35, x, y, r * 0.98);
+  glow.addColorStop(0, 'rgba(255,170,90,0.05)');
+  glow.addColorStop(1, 'rgba(255,170,90,0.3)');
   g.fillStyle = glow;
   g.fill();
 }
