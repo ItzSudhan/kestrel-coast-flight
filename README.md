@@ -53,6 +53,10 @@ Pick a sortie on the mission board with **1–4** and press **Enter**. Every sor
 3. **Flare off West Skerry** (search and rescue): find the skiff under the red flare, drop the supply crate within 60 m of it, and get back to Kestrel Field.
 4. **Last Light Landing** (storm landing): the front is on the coast. Land in rain and a gusting crosswind, under 300 fpm, on the centreline, without damage.
 
+| Cockpit on a stormy final | The mission board | A landing graded |
+| --- | --- | --- |
+| ![Cockpit view on final for runway 09 in the rain, with the lit instrument panel](screenshots/2-cockpit.jpg) | ![Mission board with the four sorties and the KC-9 over the coast](screenshots/3-board.jpg) | ![Landing card: GREASED IT, touchdown diagram, score and stars](screenshots/4-landing.jpg) |
+
 ## How it is built
 
 The game is plain ES modules under `game/src`, with three.js vendored at `game/vendor/three/`. Each file has one job:

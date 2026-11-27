@@ -293,10 +293,15 @@ export function stepSession(session, controls, dt) {
       }
     }
   }
-  if (session.state === 'flying' && storm.closed && storm.time > 0 && (a.onGround ? !nearStrip(a) : true) && session.time > 1 && storm.km <= 0 && (session.closedFor = (session.closedFor ?? 0) + dt) > 20) {
-    session.state = 'failed';
-    session.result = { ...scoreSortie(session), cause: 'The storm closed the coast' };
-    session.events.push({ type: 'sortie-over' });
+  // Twenty seconds after the front reaches the coast, anyone not safe on an airstrip has lost the sortie.
+  const sheltered = a.onGround && nearStrip(a);
+  if (session.state === 'flying' && storm.closed && !sheltered) {
+    session.closedFor = (session.closedFor ?? 0) + dt;
+    if (session.closedFor > 20) {
+      session.state = 'failed';
+      session.result = { ...scoreSortie(session), cause: 'The storm closed the coast' };
+      session.events.push({ type: 'sortie-over' });
+    }
   }
   return session.events;
 }
