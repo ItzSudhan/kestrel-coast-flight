@@ -390,6 +390,41 @@ function targetMarker(g, frame, target, labelText, colour) {
   text(g, `${labelText} · ${distText}`, ex, ey + 22, 14, colour, 'center', 800);
 }
 
+/** A one-line nudge for what the pilot should do next, from the aircraft's state. */
+export function pilotHint(session, approach) {
+  const a = session.aircraft;
+  const kt = a.ias * KT;
+  if (session.state !== 'flying') return null;
+  if (a.onGround) {
+    const stopped = kt < 2;
+    if (stopped && a.firstTouchdown) return 'HOLD R TO REFUEL AND REPAIR · SHIFT TO TAKE OFF AGAIN';
+    if (a.firstTouchdown) return 'HOLD B TO BRAKE · Q/E TO STEER';
+    if (a.throttle < 0.6) return 'HOLD SHIFT FOR FULL POWER · Q/E TO STEER';
+    if (kt > 40) return 'PULL BACK (S) TO ROTATE AT 55 KT';
+    return null;
+  }
+  if (a.stallWarning) return 'STALL WARNING · NOSE DOWN (W) · POWER UP (SHIFT)';
+  if (approach?.final && approach.distance < 3500) {
+    if (!a.gearDown) return 'GEAR DOWN (G) FOR LANDING';
+    if (a.flapDetent < 2) return 'FULL FLAPS (F) · 60–65 KT OVER THE FENCE';
+    return null;
+  }
+  if (a.gearDown && a.agl > 120 && kt > 85) return 'CLEAN UP: GEAR UP (G) · FLAPS UP (F)';
+  if (a.fuel < 15 && a.engineRunning) return 'FUEL LOW · EASE THE THROTTLE · LAND AND HOLD R';
+  return null;
+}
+
+function hintLine(g, W, y, hint) {
+  if (!hint) return;
+  g.font = `800 15px ${FONT}`;
+  const w = g.measureText(hint).width + 30;
+  g.fillStyle = 'rgba(12,14,22,0.7)';
+  g.beginPath();
+  g.roundRect(W / 2 - w / 2, y - 12, w, 24, 12);
+  g.fill();
+  text(g, hint, W / 2, y + 1, 15, AMBER, 'center', 800);
+}
+
 /** The rescue drop cue: where the crate would land if let go now, and how far off the boat. */
 function dropCue(g, frame) {
   const session = frame.session;
@@ -498,6 +533,7 @@ export function drawFlightHud(g, frame) {
   } else {
     annunciators(g, W / 2, H - 360, session, read);
   }
+  hintLine(g, W, frame.approach?.final ? 184 : 122, pilotHint(session, frame.approach));
   dropCue(g, frame);
   banner(g, W, frame);
   if (frame.mapOpen) {
