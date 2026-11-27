@@ -6,6 +6,8 @@ import { drawSixPack } from './gauges.js';
 import { FONT, text, titleTab } from './hud-paint.js';
 import { SPEAKERS, drawPortrait } from './radio-portraits.js';
 import { createRandom } from './random.js';
+import { AIRSTRIPS, landingEnd, runwayThreshold } from './places.js';
+import { runwayWind } from './wind-and-gusts.js';
 
 function screw(g, x, y) {
   g.fillStyle = '#7d8089';
@@ -220,6 +222,35 @@ function rainOnGlass(g, W, top, amount, time, windSide) {
   }
 }
 
+/**
+ * The flight computer: a green LCD with the fuel planner's figures for the strip being flown
+ * to and the crosswind on its runway, as the pilot reads them from the panel.
+ */
+function flightComputer(g, x, y, w, session) {
+  const plan = session.fuelPlan;
+  g.fillStyle = '#121317';
+  g.beginPath();
+  g.roundRect(x, y, w, 100, 8);
+  g.fill();
+  g.fillStyle = '#071a0e';
+  g.fillRect(x + 8, y + 8, w - 16, 84);
+  g.font = `700 13px "Courier New", monospace`;
+  g.fillStyle = '#6dff9a';
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  const strip = AIRSTRIPS.find((s) => s.id === session.destination) ?? AIRSTRIPS[0];
+  const t = runwayThreshold(strip, landingEnd(strip, (session.aircraft.heading * 180) / Math.PI));
+  const wind = runwayWind(session.lastWind, t.heading);
+  const bingo = plan && plan.bingoSeconds >= 1 ? `${Math.floor(plan.bingoSeconds / 60)}:${String(Math.floor(plan.bingoSeconds % 60)).padStart(2, '0')}` : 'NOW';
+  const lines = plan ? [
+    `FUEL PLAN > ${plan.name}`,
+    `NEED ${String(Math.max(1, Math.round(plan.fuel))).padStart(3)}%  RES ${String(Math.max(0, Math.round(plan.reserve))).padStart(3)}%`,
+    `BINGO ${bingo.padStart(5)}  ${plan.status.toUpperCase()}`,
+    `RWY ${t.name} XWIND ${String(Math.round(wind.crossKt)).padStart(2)}${wind.side[0]}`,
+  ] : ['FUEL PLAN', '---'];
+  lines.forEach((line, i) => g.fillText(line, x + 16, y + 21 + i * 19));
+}
+
 /** Draw the cockpit interior and its live instruments. */
 export function drawCockpitPanel(g, W, H, session, read, rain = 0) {
   const top = H - 330;
@@ -239,6 +270,5 @@ export function drawCockpitPanel(g, W, H, session, read, rain = 0) {
   gearLever(g, W / 2 + 350, top + 150, session.aircraft);
   flapIndicator(g, W / 2 + 440, top + 150, session.aircraft);
   throttleQuadrant(g, W / 2 + 535, top + 150, session.aircraft);
-  text(g, 'KC-9 KESTREL', W / 2 + 190, top + 222, 16, 'rgba(255,196,130,0.65)', 'center', 800);
-  text(g, 'LIGHTHOUSE RELIEF FLIGHT', W / 2 + 190, top + 244, 11, 'rgba(255,196,130,0.5)', 'center', 700);
+  flightComputer(g, W / 2 + 90, top + 200, 200, session);
 }

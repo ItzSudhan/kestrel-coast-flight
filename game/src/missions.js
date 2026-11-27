@@ -147,7 +147,7 @@ export function clientState(session) {
   const m = session.mission;
   if (m.id === 'rings') {
     const lit = session.rings.filter((r) => r.passed).length;
-    return { text: lit === session.rings.length ? 'ALL BEACONS LIT · THE FLEET IS SAFE' : `${lit}/${session.rings.length} BEACONS LIT · BOATS STEERING HOME`, urgent: lit < 4 };
+    return { text: lit === session.rings.length ? 'ALL BEACONS LIT · THE FLEET IS SAFE' : `${lit}/${session.rings.length} BEACONS LIT · BOATS STEERING HOME`, urgent: lit < 6 && session.storm.km < 6 };
   }
   if (m.id === 'mail') {
     const left = m.par - session.time;
