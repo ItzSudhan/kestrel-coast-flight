@@ -514,8 +514,14 @@ export function drawFlightHud(g, frame) {
   const bug = (Math.atan2(target.x - a.pos.x, -(target.z - a.pos.z)) * 180) / Math.PI;
   read.bugDeg = (bug + 360) % 360;
 
-  if (!cockpit) targetMarker(g, frame, target, target.label, target.colour);
-  else targetMarker(g, frame, target, target.label, target.colour);
+  if (!cockpit) {
+    const vignette = g.createRadialGradient(W / 2, H * 0.48, H * 0.32, W / 2, H * 0.48, W * 0.62);
+    vignette.addColorStop(0, 'rgba(12,8,24,0)');
+    vignette.addColorStop(1, 'rgba(12,8,24,0.34)');
+    g.fillStyle = vignette;
+    g.fillRect(0, 0, W, H);
+  }
+  targetMarker(g, frame, target, target.label, target.colour);
   headingTape(g, W / 2, 10, 520, read.headingDeg, read.bugDeg);
   stormBar(g, W / 2, 68, session.storm);
   callout(g, W / 2, 106, frame.approach, a);
