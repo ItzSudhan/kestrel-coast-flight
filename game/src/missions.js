@@ -32,10 +32,10 @@ export const MISSIONS = [
     number: 2,
     title: 'Mail to Puffin Cay',
     kind: 'Mail run',
-    blurb: 'Carry the keepers’ mail 7 km east to Puffin Cay on a third of a tank. Mind the throttle.',
+    blurb: 'Carry the keepers’ mail 7 km east to Puffin Cay on under half a tank. Mind the throttle.',
     par: 240,
     storm: { km: 10, kmPerSecond: 0.03, windKt: 7, gustKt: 4 },
-    start: { x: kestrel09.x + kestrel09.ax * 40, y: kestrel.elev + 1.55, z: kestrel09.z, heading: 90, speedKt: 0, onGround: true, throttle: 0, flapDetent: 1, gearDown: true, fuel: 30 },
+    start: { x: kestrel09.x + kestrel09.ax * 40, y: kestrel.elev + 1.55, z: kestrel09.z, heading: 90, speedKt: 0, onGround: true, throttle: 0, flapDetent: 1, gearDown: true, fuel: 42 },
     finish: 'land-puffin',
     objectives: [
       { id: 'takeoff', text: 'Take off from Kestrel Field', reward: 50 },
