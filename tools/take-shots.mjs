@@ -17,7 +17,8 @@ const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PORT = 8123;
 const DEBUG_PORT = 9333;
-const MAX_BYTES = 250 * 1024;
+/** Each shot stays under 240 KiB so four of them, base64'd into dossier.json beside 160 KiB of source text, keep it under the 1.5 MiB cap. */
+const MAX_BYTES = 240 * 1024;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
