@@ -20,7 +20,7 @@ Then open http://localhost:8080 in desktop Chrome. The game is plain static file
 
 ## How to play
 
-Pick a sortie on the mission board with **1–4** (or **← / →**) and press **Enter**. Every sortie runs against the **storm front**: the bar at the top shows how far out it is and how long you have before it closes the coast.
+Pick a sortie on the mission board with **1–4** (or **← / →**) and press **Enter**. Every sortie runs against the **storm front**: the bar at the top shows how far out it is and how long you have before it closes the coast. The checklist shows who the sortie is for and how they are doing right now: the beacons lit for Tobin's boats, Mrs Kerr's insulin due time, how cold Finn is getting in the skiff.
 
 - **Fly the numbers.** Lift grows with airspeed. Below about 49 kt clean (about 44 kt with full flaps) the wing stalls: the buzzer sounds, the STALL light comes on, the nose drops and a wing goes. Steep turns need more lift, so they bleed speed and can stall you at low speed.
 - **Fly the fuel plan.** Fuel burn rises steeply with throttle. The plan line under the storm bar works out the fuel to your strip from the distance, the headwind along the track and the cruise burn, then gives the reserve that leaves and the bingo time: how long you can keep burning at this throttle before you must turn for home, for example "FUEL TO KESTREL 14% · RESERVE 9% · BINGO IN 3:10". If the engine quits you glide.
@@ -69,7 +69,7 @@ Pick a sortie on the mission board with **1–4** (or **← / →**) and press *
 The game is plain ES modules under `game/src`, with three.js vendored at `game/vendor/three/`. Each file has one job:
 
 - **Simulation** (also runs in Node): `flight-physics.js`, `flight-math.js`, `damage-model.js` (per-part damage and what it does to handling), `wind-and-gusts.js` (gusts, squalls, crosswind, windsocks), `fuel-planner.js` (fuel to a strip, reserve, bingo), `divert-decision.js` (the storm call), `crash-report.js` (flight recorder and cause analysis), `pilot-career.js` (rank, medals, upgrades), `landing-grader.js`, `game-session.js`, `missions.js`, `rings-course.js`, `storm-front.js`, `terrain-height.js`, `places.js`, `autopilot.js`, `config.js`, `random.js`
-- **World**: `world-terrain.js`, `world-sea.js`, `world-sky.js`, `town-and-airstrips.js`, `lighthouse.js`, `storm-visuals.js`, `aircraft-model.js`, `ring-markers.js`, `effects.js`, `chase-camera.js`, `world-scene.js`
+- **World**: `world-terrain.js`, `world-sea.js`, `world-sky.js`, `town-and-airstrips.js` (with windsocks that stream in the live wind), `lighthouse.js`, `storm-visuals.js`, `lightning-strike-fx.js` (the forked bolt that hits the aircraft), `aircraft-model.js`, `ring-markers.js`, `effects.js` (including the crash replay's path in the world), `chase-camera.js`, `world-scene.js`
 - **Instruments and UI**: `gauges.js`, `hud.js`, `hud-paint.js`, `world-labels.js` (runway boards and the target tag), `divert-panel.js`, `drama-callout.js`, `cockpit-panel.js`, `minimap.js`, `radio-portraits.js` (the cast), `mission-board.js`, `result-card.js`, `career-card.js`
 - **Other**: `input.js`, `pilot-hints.js`, `engine-audio.js` (all sound is synthesised with WebAudio), `shots.js` (seeded screenshot scenes) and `main.js`
 
@@ -77,7 +77,7 @@ The game is plain ES modules under `game/src`, with three.js vendored at `game/v
 
 - `node tools/playtest.mjs`: a headless playtest. A seeded autopilot takes off, flies all eight rings, pushes through the squall, takes the lightning strike and lands. The script checks the stall speeds, control authority, stall behaviour, crash causes and landing grades. It also checks the fuel planner (leg times, headwind cost, reserve, a short plan), the divert (a mail run that turns back and lands at Kestrel), the damage model (a torn wing rolls her toward it, jammed gear means a belly landing, lightning costs power), the crosswind, the crash recorder's last 10 s and the career.
 - `node tools/fuzz-sorties.mjs`: flies every sortie under many seeds with a random pilot mashing every control, and fails on any exception, NaN state, or a sortie that ends without a result.
-- `node tools/take-shots.mjs`: renders the four `?shot=` scenes listed in `shots.json` in headless Chrome and fails on any console error. Add `--play` to drive the real game with key presses instead.
+- `node tools/take-shots.mjs`: renders the four `?shot=` scenes listed in `shots.json` in headless Chrome and fails on any console error. Add `--play` to drive the real game with key presses instead; `--play --crisis` flies the mail run until the storm call comes and answers it with the 1 key. `--list file.json --out dir` renders other scenes, such as `?shot=board` or `?shot=crash`.
 
 ---
 
