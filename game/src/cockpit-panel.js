@@ -3,7 +3,7 @@
 // radio stack, fuel and airframe status, the gear lever with its three greens, the flap
 // indicator and the throttle quadrant, all live.
 import { drawSixPack } from './gauges.js';
-import { FONT, text } from './hud.js';
+import { FONT, text, titleTab } from './hud-paint.js';
 import { SPEAKERS, drawPortrait } from './radio-portraits.js';
 import { createRandom } from './random.js';
 
@@ -233,6 +233,7 @@ export function drawCockpitPanel(g, W, H, session, read, rain = 0) {
   ];
   const ordered = [slots[0], slots[1], slots[2], slots[4], slots[5], slots[3]];
   drawSixPack(g, ordered, r, { ...read, rpm: session.aircraft.rpm, fuel: session.aircraft.fuel });
+  titleTab(g, 'INSTRUMENTS · PANEL LIT', 24, top + 18, 17);
   radioStack(g, 24, top + 60, 276, session);
   statusBlock(g, W / 2 + 90, top + 40, 200, session.aircraft);
   gearLever(g, W / 2 + 350, top + 150, session.aircraft);

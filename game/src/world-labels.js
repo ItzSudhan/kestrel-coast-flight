@@ -108,14 +108,16 @@ export function drawRunwayTags(g, frame, target) {
     const w = g.measureText(label).width + 20;
     // Board down-left of the threshold, else down-right, else above it: never over the aircraft
     // (the chase view keeps her low in the middle) and never off the screen.
-    const plane = { x0: W / 2 - 160, x1: W / 2 + 160, y0: H * 0.58, y1: H * 0.8 };
-    const below = Math.min(H - 236, p.y + 40);
+    const cockpit = frame.view === 'cockpit';
+    const plane = cockpit ? { x0: 0, x1: 0, y0: 0, y1: 0 } : { x0: W / 2 - 160, x1: W / 2 + 160, y0: H * 0.58, y1: H * 0.8 };
+    const floor = cockpit ? H - 384 : H - 236;
+    const below = p.y + 40 < floor ? p.y + 40 : -999;
     const spots = [
       { x: p.x - 70 - w / 2, y: below },
       { x: p.x + 70 + w / 2, y: below },
       { x: Math.max(240 + w / 2, Math.min(W - 240 - w / 2, p.x)), y: p.y - 44 },
     ];
-    const fits = (s) => s.x - w / 2 > 230 && s.x + w / 2 < W - 230 && !(s.x + w / 2 > plane.x0 && s.x - w / 2 < plane.x1 && s.y + 14 > plane.y0 && s.y - 14 < plane.y1);
+    const fits = (s) => s.y > 0 && s.x - w / 2 > 230 && s.x + w / 2 < W - 230 && !(s.x + w / 2 > plane.x0 && s.x - w / 2 < plane.x1 && s.y + 14 > plane.y0 && s.y - 14 < plane.y1);
     const spot = spots.find(fits) ?? spots[2];
     const bx = spot.x;
     const by = spot.y;

@@ -1,11 +1,12 @@
 // Builds the whole 3D coast once (renderer, haze, sky, islands, sea, town and airstrips,
 // lighthouse, storm, clouds, the aircraft and its effects) and moves it every frame to match the
-// sortie: rings, PAPI, lighthouse sweep, storm distance and lightning, rain, camera.
+// sortie: rings, PAPI, windsocks, lighthouse sweep, storm distance and lightning, rain, camera.
 import * as THREE from 'three';
 import { buildHeightGrid, createHeightTexture, createTerrainMesh } from './world-terrain.js';
 import { createSea } from './world-sea.js';
 import { FOG_WARM, atmosphere, createClouds, createLights, createSkyDome, followShadow, installAtmosphereFog } from './world-sky.js';
-import { createSettlements, updatePapi } from './town-and-airstrips.js';
+import { createSettlements, updatePapi, updateWindsocks } from './town-and-airstrips.js';
+import { windsockPose } from './wind-and-gusts.js';
 import { createLighthouse, updateLighthouse } from './lighthouse.js';
 import { createStormVisuals, updateStormVisuals } from './storm-visuals.js';
 import { createAircraftModel, poseAircraftModel } from './aircraft-model.js';
@@ -81,6 +82,7 @@ export function createWorldScene(canvas) {
     updateRescueProps(fx, session, time);
     if (rings && ringSession === session) updateRingMarkers(rings, session, time);
     updatePapi(settlements, camera.position);
+    updateWindsocks(settlements, windsockPose(session.lastWind), time);
     updateLighthouse(lighthouse, time, camera.position);
     const grip = stormGrip(session.storm, camera.position.x, camera.position.z);
     const rain = Math.max(session.mission.rain ? 0.75 : 0, grip);

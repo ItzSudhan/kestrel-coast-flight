@@ -2,6 +2,7 @@
 // roll, clean up after takeoff, the stall recovery, gear and full flaps on final, brakes on the
 // rollout, refuel when stopped, and fuel discipline. Pure, so the fuzz test can call it too.
 import { KT } from './config.js';
+import { runwayWind } from './wind-and-gusts.js';
 
 export function pilotHint(session, approach) {
   const a = session.aircraft;
@@ -20,6 +21,8 @@ export function pilotHint(session, approach) {
   if (approach?.final && approach.distance < 3500) {
     if (!a.gearDown) return 'GEAR DOWN (G) FOR LANDING';
     if (a.flapDetent < 2) return 'FULL FLAPS (F) · 60–65 KT OVER THE FENCE';
+    const cross = runwayWind(session.lastWind, approach.threshold.heading);
+    if (cross.crossKt > 8) return `CROSSWIND ${Math.round(cross.crossKt)} KT FROM THE ${cross.side} · CRAB INTO IT · RUDDER STRAIGHT IN THE FLARE`;
     return null;
   }
   if (a.gearDown && a.agl > 120 && kt > 85) return 'CLEAN UP: GEAR UP (G) · FLAPS UP (F)';

@@ -70,7 +70,7 @@ const SHOT_CAREER = { points: 1460, sorties: 6, medals: { greaser: 2, 'fuel-mise
 export function stageShot(name, seed) {
   if (name === 'board') {
     const session = createSession('rings', seed);
-    return { screen: 'board', session, view: 'orbit', pilot: null, settle: 0, best: { rings: 3, mail: 2, rescue: 1 } };
+    return { screen: 'board', session, view: 'orbit', pilot: null, settle: 0, best: { rings: 3, mail: 2, rescue: 1 }, career: { ...SHOT_CAREER, points: 3570 } };
   }
   if (name === 'career' || name === 'result') {
     // The whole ring course, pushing through the squall, to the landing card; the career banks it.

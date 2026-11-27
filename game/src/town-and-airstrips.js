@@ -84,7 +84,7 @@ function lightPoints(list, size) {
   return new THREE.Points(geometry, material);
 }
 
-function buildRunway(strip, group, papis) {
+function buildRunway(strip, group, papis, socks) {
   const { ax, az, rx, rz } = runwayAxes(strip);
   const angle = (-strip.heading * Math.PI) / 180;
   const pad = new THREE.Mesh(new THREE.PlaneGeometry(strip.width + 26, strip.length + 60), shareAtmosphere(new THREE.MeshLambertMaterial({ color: '#8d9a5a', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -20 })));
@@ -157,10 +157,21 @@ function buildRunway(strip, group, papis) {
   const wz = strip.z - rz * (strip.width / 2 + 30) + az * (strip.length / 2 - 180);
   mast.position.set(wx, strip.elev + 4, wz);
   group.add(mast);
-  const sock = new THREE.Mesh(new THREE.ConeGeometry(0.9, 5, 10, 1, true), new THREE.MeshLambertMaterial({ color: '#ff7a2a', side: THREE.DoubleSide }));
-  sock.rotation.x = Math.PI / 2;
-  sock.position.set(wx, strip.elev + 7.6, wz + 2.5);
-  group.add(sock);
+  // The windsock hangs from a pivot on the mast top; the scene swings and fills it with the wind.
+  const pivot = new THREE.Group();
+  pivot.rotation.order = 'YXZ';
+  pivot.position.set(wx, strip.elev + 7.8, wz);
+  const stripes = ['#ff7a2a', '#ffffff', '#ff7a2a', '#ffffff', '#ff7a2a'];
+  stripes.forEach((colour, k) => {
+    const r0 = 0.95 - k * 0.14;
+    const r1 = r0 - 0.14;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, 1.1, 10, 1, true), new THREE.MeshLambertMaterial({ color: colour, side: THREE.DoubleSide }));
+    band.rotation.x = Math.PI / 2;
+    band.position.z = 0.6 + k * 1.1;
+    pivot.add(band);
+  });
+  group.add(pivot);
+  socks.push(pivot);
 }
 
 function prismGeometry() {
@@ -317,7 +328,8 @@ function buildForests(group) {
 export function createSettlements() {
   const group = new THREE.Group();
   const papis = [];
-  for (const strip of AIRSTRIPS) buildRunway(strip, group, papis);
+  const socks = [];
+  for (const strip of AIRSTRIPS) buildRunway(strip, group, papis, socks);
   buildTown(group);
   const kestrel = AIRSTRIPS[0];
   buildRoad(group, [[TOWN.x, TOWN.z], [TOWN.x - 120, TOWN.z - 400], [kestrel.x + 200, kestrel.z + 140], [kestrel.x + 200, kestrel.z + 60]]);
@@ -329,7 +341,20 @@ export function createSettlements() {
   }
   const papiPoints = lightPoints(papiLights, 7);
   group.add(papiPoints);
-  return { group, papis, papiPoints };
+  return { group, papis, papiPoints, socks };
+}
+
+/**
+ * Swing the windsocks into the wind and let them fill: `pose` is windsockPose() from
+ * wind-and-gusts.js. A light wind leaves them drooping; a gust stands them straight out and
+ * makes them flutter.
+ */
+export function updateWindsocks(settlements, pose, time) {
+  for (const pivot of settlements.socks) {
+    const flutter = Math.sin(time * 9 + pivot.position.x) * 0.05 * pose.fill;
+    pivot.rotation.y = pose.yaw + flutter;
+    pivot.rotation.x = (1 - pose.fill) * 1.15 + Math.abs(flutter) * 0.5;
+  }
 }
 
 /**

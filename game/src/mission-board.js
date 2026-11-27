@@ -1,8 +1,10 @@
 // The mission board, the game's title screen: KESTREL COAST over the parked KC-9, the storm's
 // distance, and the four sorties as cards with their goal, par, fuel load, storm distance,
 // objectives and best stars. 1-4 or the arrows pick, Enter flies.
-import { FONT, panel, text } from './hud.js';
+import { FONT, measure, panel, text } from './hud-paint.js';
 import { MISSIONS, clock } from './missions.js';
+import { drawPortrait, speakerOf } from './radio-portraits.js';
+import { careerUpgrades, rankOf } from './pilot-career.js';
 import { createAircraft } from './flight-physics.js';
 import { quatFromAttitude } from './flight-math.js';
 
@@ -93,8 +95,23 @@ function stars(g, x, y, count, size, align = 'left') {
 }
 export { stars as drawStars };
 
+/** The pilot's rank, progress and fitted upgrades, top right of the board. */
+function careerStrip(g, x, y, w, career) {
+  const rank = rankOf(career.points);
+  panel(g, x, y, w, 112, '#ffd54a');
+  text(g, 'PILOT CAREER', x + 16, y + 20, 13, AMBER, 'left', 900);
+  text(g, `${career.points.toLocaleString('en-GB')} PTS · ${Object.values(career.medals).reduce((s, n) => s + n, 0)} MEDALS`, x + w - 16, y + 20, 12, 'rgba(246,236,216,0.8)', 'right', 800);
+  text(g, rank.name, x + 16, y + 48, 26, '#ffffff', 'left', 900);
+  g.fillStyle = 'rgba(255,255,255,0.12)';
+  g.fillRect(x + 16, y + 66, w - 32, 7);
+  g.fillStyle = '#ffd54a';
+  g.fillRect(x + 16, y + 66, (w - 32) * Math.min(1, rank.progress), 7);
+  const fitted = careerUpgrades(career);
+  text(g, fitted.length ? `FITTED: ${fitted.map((u) => u.name).join(' · ')}` : `NEXT RANK FITS THE LONG-RANGE TANK`, x + 16, y + 92, 11, fitted.length ? '#5dff8a' : 'rgba(246,236,216,0.7)', 'left', 800);
+}
+
 /** Draw the board. `best` maps mission id to best stars; `selected` is the highlighted index. */
-export function drawMissionBoard(g, W, H, selected, best, stormKm, time) {
+export function drawMissionBoard(g, W, H, selected, best, stormKm, time, career = null) {
   const shade = g.createLinearGradient(0, 0, 0, H);
   shade.addColorStop(0, 'rgba(10,10,20,0.55)');
   shade.addColorStop(0.35, 'rgba(10,10,20,0)');
@@ -106,7 +123,7 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time) {
   text(g, 'LIGHTHOUSE RELIEF · A BUSH-PILOT SORTIE GAME', 44, 116, 20, AMBER, 'left', 800);
   g.fillStyle = 'rgba(20,16,34,0.78)';
   g.beginPath();
-  g.roundRect(44, 136, 470, 34, 17);
+  g.roundRect(44, 136, 500, 34, 17);
   g.fill();
   g.strokeStyle = 'rgba(190,160,255,0.7)';
   g.stroke();
@@ -138,9 +155,11 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time) {
     g.arc(x + 46, y + 50, 30, 0, Math.PI * 2);
     g.fill();
     icon(g, i, x + 46, y + 50, 48, colour);
-    text(g, `${m.number}`, x + cardW - 22, y + 30, 30, colour, 'right', 900);
     text(g, m.kind.toUpperCase(), x + 88, y + 34, 13, colour, 'left', 800);
-    text(g, m.title, x + 88, y + 58, 21, '#ffffff', 'left', 800);
+    text(g, m.title, x + 88, y + 56, Math.min(21, (21 * (cardW - 100)) / measure(g, m.title, 21, 800)), '#ffffff', 'left', 800);
+    const client = speakerOf(m.client.who);
+    drawPortrait(g, x + 88, y + 70, 22, m.client.who);
+    text(g, `FOR ${client.name}`, x + 116, y + 82, 12, client.colour, 'left', 900);
     g.font = `600 14px ${FONT}`;
     const words = m.blurb.split(' ');
     let line = '';
@@ -148,7 +167,7 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time) {
     for (const word of words) {
       const test = line ? `${line} ${word}` : word;
       if (g.measureText(test).width > cardW - 30) {
-        text(g, line, x + 16, y + 100 + row * 19, 14, 'rgba(255,244,224,0.88)', 'left', 600);
+        text(g, line, x + 16, y + 106 + row * 19, 14, 'rgba(255,244,224,0.88)', 'left', 600);
         line = word;
         row += 1;
       } else line = test;
@@ -166,6 +185,7 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time) {
     stars(g, x + 16, y + cardH - 26, best[m.id] ?? 0, 20);
     text(g, on ? 'ENTER ▸ FLY' : `PRESS ${m.number}`, x + cardW - 16, y + cardH - 26, 15, on ? colour : 'rgba(255,244,224,0.55)', 'right', 800);
   });
+  if (career) careerStrip(g, W - 400, 24, 376, career);
   g.fillStyle = 'rgba(8,9,14,0.7)';
   g.fillRect(0, H - 22, W, 22);
   text(g, '1-4 / ◀ ▶ PICK A SORTIE · ENTER FLY · W/S PITCH · A/D ROLL · Q/E RUDDER · SHIFT/CTRL THROTTLE · F FLAPS · G GEAR · C CAMERA · M MAP', W / 2, H - 11, 13, 'rgba(246,236,216,0.82)', 'center', 700);

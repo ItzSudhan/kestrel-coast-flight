@@ -137,14 +137,17 @@ try {
     console.log(`  status line: ${state}`);
     await capture(join(root, 'out', 'play-check.jpg'));
   } else {
-    const shots = JSON.parse(readFileSync(join(root, 'shots.json'), 'utf8'));
-    mkdirSync(join(root, 'screenshots'), { recursive: true });
+    // `--list file.json --out dir` renders other scenes (the board, a crash) for a look, leaving screenshots/ alone.
+    const listFile = args.includes('--list') ? args[args.indexOf('--list') + 1] : join(root, 'shots.json');
+    const outDir = args.includes('--out') ? args[args.indexOf('--out') + 1] : join(root, 'screenshots');
+    const shots = JSON.parse(readFileSync(listFile, 'utf8'));
+    mkdirSync(outDir, { recursive: true });
     for (const s of shots) {
       if (only && !s.name.includes(only)) continue;
       await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/index.html${s.query}` });
       await waitFor(() => evaluate('window.__shotReady === true'), 120000, `${s.name} ready`);
       await sleep(300);
-      await capture(join(root, 'screenshots', s.name));
+      await capture(join(outDir, s.name));
     }
   }
   if (errors.length) {

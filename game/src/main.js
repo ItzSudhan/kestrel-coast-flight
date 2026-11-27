@@ -264,7 +264,7 @@ function drawOverlay() {
   const session = game.session;
   if (game.banner && game.time > game.banner.until) game.banner = null;
   if (game.screen === 'board') {
-    drawMissionBoard(g, W, H, game.selected, game.best, session.storm.km, game.time);
+    drawMissionBoard(g, W, H, game.selected, game.best, session.storm.km, game.time, game.career);
     return;
   }
   if (game.screen === 'result') {
@@ -376,6 +376,7 @@ function runShot(name) {
   game.screen = scene.screen;
   game.view = scene.view;
   if (scene.best) game.best = scene.best;
+  if (scene.career) game.career = createCareer(scene.career);
   world.setSession(scene.session);
   let time = 40 + seed;
   let controls = { pitch: 0, roll: 0, yaw: 0, throttle: 0 };
