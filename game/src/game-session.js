@@ -51,7 +51,7 @@ function openingLine(mission) {
   if (mission.id === 'rings') return 'Kestrel Radio: Rings are lit, storm is twelve out. Wheels up when ready.';
   if (mission.id === 'mail') return 'Kestrel Radio: Mail’s aboard. Fuel is thin — cruise, don’t race.';
   if (mission.id === 'rescue') return 'Gannet Light: Skiff adrift north-west of the Skerry. Look for red smoke.';
-  return 'Kestrel Radio: Front’s on us. Wind three-six-zero at thirteen, gusting. Runway 09.';
+  return 'Kestrel Radio: Front’s on us. Wind zero-two-zero at thirteen, gusting. Runway 09.';
 }
 
 /** Add a radio line from a speaker. */

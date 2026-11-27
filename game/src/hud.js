@@ -438,6 +438,34 @@ function dropCue(g, frame) {
   text(g, label, W / 2, 194, 20, good ? '#c8ffd8' : '#ffffff', 'center', 800);
 }
 
+/** Wind as pilots read it: the direction it blows from, its speed, and the gust on top. */
+function windReadout(g, cx, y, wind) {
+  const speedKt = Math.hypot(wind.x, wind.z) * KT;
+  let from = (Math.atan2(-wind.x, wind.z) * 180) / Math.PI;
+  from = (from + 360) % 360;
+  const gust = Math.max(0, Math.round(wind.gustKt ?? 0));
+  const label = `WIND ${String(Math.round(from / 10) * 10 || 360).padStart(3, '0')}° ${Math.round(speedKt)} KT${gust > 2 ? ` G${Math.round(speedKt + gust)}` : ''}`;
+  g.font = `800 14px ${FONT}`;
+  const w = g.measureText(label).width + 44;
+  g.fillStyle = PANEL;
+  g.beginPath();
+  g.roundRect(cx - w / 2, y - 12, w, 24, 12);
+  g.fill();
+  g.save();
+  g.translate(cx - w / 2 + 16, y);
+  g.rotate(((from + 180) * Math.PI) / 180);
+  g.fillStyle = '#9fe8ff';
+  g.beginPath();
+  g.moveTo(0, -8);
+  g.lineTo(5, 5);
+  g.lineTo(0, 2);
+  g.lineTo(-5, 5);
+  g.closePath();
+  g.fill();
+  g.restore();
+  text(g, label, cx + 10, y + 1, 14, '#ffffff', 'center', 800);
+}
+
 function controlsStrip(g, W, H) {
   g.fillStyle = 'rgba(8,9,14,0.7)';
   g.fillRect(0, H - 22, W, 22);
@@ -493,6 +521,7 @@ export function drawFlightHud(g, frame) {
   callout(g, W / 2, 106, frame.approach, a);
   objectivesPanel(g, 14, 14, session);
   drawMinimap(g, frame.mapImage, W - 106, 106, 92, 4200, session);
+  windReadout(g, W - 106, 222, session.lastWind);
 
   const stall = stallSpeed(a.flaps, a.damage.wings) * KT;
   const spdColour = a.stallWarning ? RED : read.kt > AIRFRAME.overspeedKt - 5 ? RED : '#ffffff';

@@ -104,7 +104,7 @@ try {
       if (hold) await sleep(hold);
       await send('Input.dispatchKeyEvent', { type: 'keyUp', code, key });
     };
-    await key('Digit2', '2');
+    await key(args.includes('--chase') ? 'Digit1' : 'Digit2', args.includes('--chase') ? '1' : '2');
     await sleep(500);
     await key('Enter', 'Enter');
     await sleep(500);
@@ -116,6 +116,9 @@ try {
     if (args.includes('--crash')) {
       await key('KeyW', 'w', 9000);
       await sleep(5000);
+    } else if (args.includes('--chase')) {
+      await key('KeyD', 'd', 700);
+      await sleep(2500);
     } else {
       await key('KeyC', 'c');
       await sleep(1500);
