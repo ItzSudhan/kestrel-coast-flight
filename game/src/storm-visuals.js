@@ -32,6 +32,26 @@ void main() {
   });
 }
 
+/** Turn the bolt's segments into flat ribbons `width` wide, facing the coast, so they read from afar. */
+function ribbonGeometry(points, width) {
+  const positions = [];
+  for (let i = 0; i < points.length; i += 6) {
+    const [x0, y0, z0, x1, y1, z1] = points.slice(i, i + 6);
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const len = Math.hypot(dx, dy) || 1;
+    const w0 = (width * (0.5 + y0 / 4000)) / 2;
+    const w1 = (width * (0.5 + y1 / 4000)) / 2;
+    const nx = -dy / len;
+    const ny = dx / len;
+    positions.push(x0 + nx * w0, y0 + ny * w0, z0, x0 - nx * w0, y0 - ny * w0, z0, x1 + nx * w1, y1 + ny * w1, z1);
+    positions.push(x0 - nx * w0, y0 - ny * w0, z0, x1 - nx * w1, y1 - ny * w1, z1, x1 + nx * w1, y1 + ny * w1, z1);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geometry;
+}
+
 function boltGeometry(seed, height) {
   const random = createRandom(seed);
   const points = [];
@@ -60,9 +80,7 @@ function boltGeometry(seed, height) {
     z = points[i * 6 + 2];
     addFork(x, y, z, y * 0.5, 5);
   }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-  return geometry;
+  return { core: ribbonGeometry(points, 34), glow: ribbonGeometry(points, 240) };
 }
 
 export function createStormVisuals() {
@@ -88,8 +106,10 @@ export function createStormVisuals() {
   }
   group.add(deck);
 
-  const boltMaterial = new THREE.LineBasicMaterial({ color: '#e9f0ff', transparent: true, opacity: 1, fog: false });
-  const bolt = new THREE.LineSegments(boltGeometry(1, 2000), boltMaterial);
+  const shapes = boltGeometry(1, 2000);
+  const bolt = new THREE.Group();
+  bolt.add(new THREE.Mesh(shapes.glow, new THREE.MeshBasicMaterial({ color: '#7f9cff', transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })));
+  bolt.add(new THREE.Mesh(shapes.core, new THREE.MeshBasicMaterial({ color: '#f4f7ff', side: THREE.DoubleSide, fog: false })));
   bolt.visible = false;
   group.add(bolt);
   const flashLight = new THREE.PointLight('#bcd0ff', 0, 9000, 1.2);
@@ -123,8 +143,12 @@ export function updateStormVisuals(visuals, storm, time, eye, rainAmount, wind) 
   visuals.flashLight.intensity = storm.flash * 6;
   if (storm.bolt) {
     if (visuals.boltSeed !== storm.bolt.seed) {
-      visuals.bolt.geometry.dispose();
-      visuals.bolt.geometry = boltGeometry(storm.bolt.seed, 2000);
+      const shapes = boltGeometry(storm.bolt.seed, 2000);
+      const [glow, core] = visuals.bolt.children;
+      glow.geometry.dispose();
+      core.geometry.dispose();
+      glow.geometry = shapes.glow;
+      core.geometry = shapes.core;
       visuals.boltSeed = storm.bolt.seed;
     }
     visuals.bolt.position.set(storm.bolt.x, 0, -300);

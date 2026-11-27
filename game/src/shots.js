@@ -65,5 +65,8 @@ export function stageShot(name, seed) {
       say(s, SPEAKER_PILOT, 'Clipped the treetops on the north ridge!');
     }
   });
+  // A bolt forks down over the stretch of the front that is in frame as the picture is taken.
+  session.storm.bolt = { x: 3750, seed: 7 + seed, life: (SETTLE_STEPS + 30) * STEP };
+  session.storm.nextBolt = 60;
   return { screen: 'fly', session, view: 'chase', pilot, settle: SETTLE_STEPS };
 }

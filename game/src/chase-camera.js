@@ -48,7 +48,7 @@ export function updateCamera(rig, aircraft, dt, snap = false) {
     heading.lerp(new THREE.Vector3(travel.x, 0, travel.z).normalize(), 0.4).normalize();
   }
   const climb = Math.max(-0.35, Math.min(0.35, forward.y));
-  desired.copy(p).addScaledVector(heading, -14.5).addScaledVector(new THREE.Vector3(0, 1, 0), 5.4 - climb * 8);
+  desired.copy(p).addScaledVector(heading, -12.8).addScaledVector(new THREE.Vector3(0, 1, 0), 4.8 - climb * 8);
   lookAt.copy(p).addScaledVector(heading, 26).addScaledVector(new THREE.Vector3(0, 1, 0), 2.2 + climb * 20);
   const ground = rig.groundHeight ? rig.groundHeight(desired.x, desired.z) : 0;
   desired.y = Math.max(desired.y, ground + 2.5);
