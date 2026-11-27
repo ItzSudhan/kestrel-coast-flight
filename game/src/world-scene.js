@@ -95,7 +95,10 @@ export function createWorldScene(canvas) {
     lights.fill.intensity = 1.0 * (1 - rain * 0.2) + session.storm.flash * 1.6;
     scene.fog.near = 1600 * (1 - rain * 0.7);
     scene.fog.far = 17000 * (1 - rain * 0.55);
-    followShadow(lights, view === VIEW_CHASE ? model.root.position : camera.position);
+    const ahead = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize().multiplyScalar(450);
+    const focus = camera.position.clone().add(ahead);
+    focus.y = Math.max(0, terrainHeight(focus.x, focus.z));
+    followShadow(lights, focus);
     renderer.render(scene, camera);
   }
 

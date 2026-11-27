@@ -122,6 +122,7 @@ export function createTerrainMesh(grid) {
   const material = shareAtmosphere(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
   const mesh = new THREE.Mesh(geometry, material);
   mesh.receiveShadow = true;
+  mesh.castShadow = true;
   return mesh;
 }
 

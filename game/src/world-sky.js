@@ -179,16 +179,16 @@ export function createLights(scene) {
   const sun = new THREE.DirectionalLight('#ffb878', 3.0);
   sun.position.copy(SUN_DIR).multiplyScalar(600);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(4096, 4096);
   const cam = sun.shadow.camera;
-  cam.left = -45;
-  cam.right = 45;
-  cam.top = 45;
-  cam.bottom = -45;
+  cam.left = -SHADOW_REACH;
+  cam.right = SHADOW_REACH;
+  cam.top = SHADOW_REACH;
+  cam.bottom = -SHADOW_REACH;
   cam.near = 10;
-  cam.far = 1400;
-  sun.shadow.bias = -0.0008;
-  sun.shadow.normalBias = 0.4;
+  cam.far = 5000;
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 1.2;
   scene.add(sun);
   scene.add(sun.target);
   const fill = new THREE.HemisphereLight('#94a4e0', '#b27a4c', 1.0);
@@ -196,8 +196,11 @@ export function createLights(scene) {
   return { sun, fill };
 }
 
+/** Half-width of the sun's shadow box: long golden-hour shadows from hills and trees ahead. */
+const SHADOW_REACH = 700;
+
 /** Keep the sun's shadow box centred on what the camera looks at. */
 export function followShadow(lights, focus) {
   lights.sun.target.position.copy(focus);
-  lights.sun.position.copy(focus).addScaledVector(SUN_DIR, 600);
+  lights.sun.position.copy(focus).addScaledVector(SUN_DIR, 2000);
 }

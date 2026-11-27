@@ -307,7 +307,7 @@ function buildForests(group) {
     colour.set(t.tone > 0.66 ? '#3f6b3a' : t.tone > 0.33 ? '#2f5a37' : '#4d7a3f');
     trees.setColorAt(i, colour);
   });
-  trees.castShadow = false;
+  trees.castShadow = true;
   trees.receiveShadow = true;
   group.add(trees);
   return list.length;
