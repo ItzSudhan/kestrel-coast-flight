@@ -265,6 +265,12 @@ function radioPanel(g, x, y, w, h, session) {
   const speaker = SPEAKERS[who];
   text(g, speaker.name, x + 90, y + 44, 14, speaker.colour);
   text(g, speaker.role, x + 90, y + 61, 12, 'rgba(246,236,216,0.65)', 'left', 600);
+  // The other end of the conversation, listening.
+  const other = who === 'pilot' ? (session.mission.boat ? 'keeper' : 'radio') : 'pilot';
+  g.globalAlpha = 0.75;
+  drawPortrait(g, x + w - 52, y + 50, 40, other);
+  g.globalAlpha = 1;
+  text(g, other === 'pilot' ? 'YOU' : SPEAKERS[other].name.split(' ')[0], x + w - 32, y + 98, 10, 'rgba(246,236,216,0.6)', 'center', 700);
   const body = last.text.replace(/^[^:]+:\s*/, '');
   const lines = wrap(g, `“${body}”`, w - 26, 15).slice(0, 3);
   lines.forEach((line, i) => text(g, line, x + 14, y + 118 + i * 19, 15, '#ffffff', 'left', 600));
