@@ -3,6 +3,8 @@
 // M opens it full size.
 import { AIRSTRIPS, ISLANDS, LIGHTHOUSE, MAP, TOWN, runwayAxes } from './places.js';
 import { STORM_NORMAL, STORM_ORIGIN, stormWallOffset } from './storm-front.js';
+import { MIN_RESERVE, PLAN_TAS_KT, PLAN_THROTTLE, burnRate } from './fuel-planner.js';
+import { KT } from './config.js';
 
 /** Paint the islands from the height grid into an offscreen canvas, one pixel per grid cell. */
 export function paintMapImage(grid) {
@@ -101,6 +103,33 @@ export function drawMinimap(g, image, cx, cy, r, range, session, whole = false) 
         g.stroke();
       }
     });
+  }
+  // The fuel plan on the map: the route to the strip being flown to, and the range ring (how
+  // far the tanks reach at cruise and still land with the reserve).
+  const dest = AIRSTRIPS.find((s) => s.id === session.destination);
+  if (dest && !session.rings.slice(session.nextRing).length) {
+    g.strokeStyle = 'rgba(159,232,255,0.9)';
+    g.lineWidth = 2;
+    g.setLineDash([6, 5]);
+    g.beginPath();
+    g.moveTo(sx(a.pos.x), sy(a.pos.z));
+    g.lineTo(sx(dest.x), sy(dest.z));
+    g.stroke();
+    g.setLineDash([]);
+  }
+  const rangeM = (Math.max(0, a.fuel - MIN_RESERVE) / burnRate(PLAN_THROTTLE)) * (PLAN_TAS_KT / KT);
+  g.strokeStyle = a.fuel - MIN_RESERVE < 6 ? 'rgba(255,90,69,0.9)' : 'rgba(255,215,106,0.8)';
+  g.lineWidth = 1.8;
+  g.setLineDash([3, 5]);
+  g.beginPath();
+  g.arc(sx(a.pos.x), sy(a.pos.z), rangeM * k, 0, Math.PI * 2);
+  g.stroke();
+  g.setLineDash([]);
+  if (whole) {
+    g.font = '800 12px "Trebuchet MS", sans-serif';
+    g.fillStyle = '#ffd76a';
+    g.textAlign = 'center';
+    g.fillText(`FUEL RANGE ${(rangeM / 1000).toFixed(1)} KM`, sx(a.pos.x), sy(a.pos.z) - rangeM * k - 8);
   }
   g.fillStyle = '#ffe9a8';
   g.beginPath();
