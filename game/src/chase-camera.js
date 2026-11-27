@@ -24,7 +24,7 @@ export function updateCamera(rig, aircraft, dt, snap = false) {
   upVec.set(0, 1, 0).applyQuaternion(q);
   const p = new THREE.Vector3(aircraft.pos.x, aircraft.pos.y, aircraft.pos.z);
   if (rig.mode === VIEW_COCKPIT) {
-    camera.position.copy(new THREE.Vector3(0, 1.02, -1.15).applyQuaternion(q).add(p));
+    camera.position.copy(new THREE.Vector3(-0.3, 0.84, -1.35).applyQuaternion(q).add(p));
     camera.quaternion.copy(q).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.07));
     camera.fov = 72;
     camera.updateProjectionMatrix();

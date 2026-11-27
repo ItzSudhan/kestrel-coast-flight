@@ -71,7 +71,10 @@ export function createWorldScene(canvas) {
     const a = session.aircraft;
     rig.mode = view;
     poseAircraftModel(model, a, controls, time, dt);
-    model.root.visible = view !== VIEW_COCKPIT || Boolean(a.crashed);
+    // From the pilot's seat the wing roots, struts and prop disc stay in view; the cabin shell does not.
+    model.root.visible = true;
+    model.cabin.visible = view !== VIEW_COCKPIT || Boolean(a.crashed);
+    model.gear.visible = model.gear.visible && view !== VIEW_COCKPIT;
     model.root.updateMatrixWorld(true);
     updateCamera(rig, a, dt, snap);
     updateEffects(fx, a, model, dt, time);

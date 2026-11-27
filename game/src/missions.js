@@ -74,7 +74,7 @@ export const MISSIONS = [
     rain: true,
     finish: 'land-kestrel',
     objectives: [
-      { id: 'land-kestrel', text: 'Land Kestrel Field before the storm', reward: 400 },
+      { id: 'land-kestrel', text: 'Land before the storm hits', reward: 400 },
       { id: 'soft-touch', text: 'Touch down under 300 fpm', reward: 250 },
       { id: 'centreline', text: 'Within 5 m of the centreline', reward: 200 },
       { id: 'no-damage', text: 'Bring her home undamaged', reward: 150 },

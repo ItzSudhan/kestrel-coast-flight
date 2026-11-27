@@ -115,24 +115,23 @@ export function createAircraftModel() {
   const tyre = new THREE.MeshStandardMaterial({ color: '#1d1d20', roughness: 0.9 });
   const glass = new THREE.MeshStandardMaterial({ color: '#4a6c8c', roughness: 0.08, metalness: 0.3, emissive: '#7a5238', emissiveIntensity: 0.45 });
 
+  // The cabin shell: hidden from the pilot's seat, where the panel overlay stands in for it.
+  const cabin = new THREE.Group();
+  body.add(cabin);
   const fuselage = new THREE.Mesh(loftFuselage(), paint);
   fuselage.castShadow = true;
-  body.add(fuselage);
-
-  // Cabin glass.
+  cabin.add(fuselage);
   const windshield = part(new THREE.BoxGeometry(1.16, 0.05, 1.05), glass, 0, 0.83, -2.25);
   windshield.rotation.x = -0.62;
-  body.add(windshield);
+  cabin.add(windshield);
   for (const side of [-1, 1]) {
     const pane = part(new THREE.BoxGeometry(0.05, 0.52, 1.0), glass, side * 0.68, 0.55, -1.45);
     const rear = part(new THREE.BoxGeometry(0.05, 0.46, 0.8), glass, side * 0.66, 0.53, -0.2);
-    body.add(pane, rear);
+    cabin.add(pane, rear);
     const letters = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.48), new THREE.MeshBasicMaterial({ map: tailLetters(), transparent: true, depthWrite: false }));
     letters.position.set(side * 0.5, 0.35, 1.9);
-    letters.rotation.y = side * Math.PI / 2 * -1 + (side < 0 ? Math.PI : 0);
     letters.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
-    if (side < 0) letters.scale.x = 1;
-    body.add(letters);
+    cabin.add(letters);
   }
 
   // High wing with tips, ailerons, flaps and struts.
@@ -263,7 +262,7 @@ export function createAircraftModel() {
   }
   const strobe = navLights[2];
 
-  return { root, body, prop, blades, disc, ailerons, flaps, elevator, rudder: rudderPivot, gear, strobe, wingTips: [new THREE.Vector3(-6.2, 1.0, -0.5), new THREE.Vector3(6.2, 1.0, -0.5)] };
+  return { root, body, cabin, prop, blades, disc, ailerons, flaps, elevator, rudder: rudderPivot, gear, strobe, wingTips: [new THREE.Vector3(-6.2, 1.0, -0.5), new THREE.Vector3(6.2, 1.0, -0.5)] };
 }
 
 /** Pose the model from the aircraft state and the pilot's inputs. */

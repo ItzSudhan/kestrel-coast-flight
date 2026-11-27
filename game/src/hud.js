@@ -168,7 +168,9 @@ function objectivesPanel(g, x, y, session) {
     let label = o.text;
     if (o.id === 'rings') label = `${o.text} ${session.nextRing}/${session.rings.length}`;
     if (o.id === 'par') label = `${o.text} ${clock(m.par)}`;
-    text(g, label, x + 42, ry + 1, 15, o.done ? 'rgba(246,236,216,0.6)' : next ? '#ffffff' : 'rgba(246,236,216,0.85)', 'left', next ? 700 : 600);
+    g.font = `700 15px ${FONT}`;
+    const size = Math.min(15, Math.floor((15 * (w - 110)) / Math.max(1, g.measureText(label).width)));
+    text(g, label, x + 42, ry + 1, size, o.done ? 'rgba(246,236,216,0.6)' : next ? '#ffffff' : 'rgba(246,236,216,0.85)', 'left', next ? 700 : 600);
     text(g, `+${o.reward}`, x + w - 14, ry + 1, 14, o.done ? GREEN : AMBER, 'right');
   });
 }
@@ -346,7 +348,9 @@ function targetMarker(g, frame, target, labelText, colour) {
     const s = 16;
     g.strokeStyle = colour;
     g.lineWidth = 2.5;
-    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    // On final the runway itself is the target: label it, keep the threshold clear.
+    const corners = frame.approach?.final && target.runway ? [] : [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    for (const [dx, dy] of corners) {
       g.beginPath();
       g.moveTo(p.x + dx * s, p.y + dy * (s - 8));
       g.lineTo(p.x + dx * s, p.y + dy * s);
@@ -357,10 +361,11 @@ function targetMarker(g, frame, target, labelText, colour) {
     g.font = `800 14px ${FONT}`;
     const label = `${labelText} · ${distText}`;
     const lw = g.measureText(label).width + 14;
+    const ly = corners.length ? p.y - s - 26 : p.y - 58;
     g.beginPath();
-    g.roundRect(p.x - lw / 2, p.y - s - 26, lw, 20, 5);
+    g.roundRect(p.x - lw / 2, ly, lw, 20, 5);
     g.fill();
-    text(g, label, p.x, p.y - s - 15, 14, colour, 'center', 800);
+    text(g, label, p.x, ly + 11, 14, colour, 'center', 800);
     return;
   }
   let dx = p.x - W / 2;
@@ -452,7 +457,7 @@ export function currentTarget(session) {
   if (m.boat && !session.crate?.landed) return { x: m.boat.x, y: 4, z: m.boat.z, label: 'FLARE BOAT', colour: '#ff6a5a' };
   const strip = AIRSTRIPS.find((s) => s.id === (m.finish === 'land-puffin' ? 'puffin' : 'kestrel'));
   const t = runwayThreshold(strip, m.id === 'rescue' && false);
-  return { x: t.x, y: strip.elev, z: t.z, label: `${strip.name.toUpperCase()} ${t.name}`, colour: '#9fe8ff' };
+  return { x: t.x, y: strip.elev, z: t.z, label: `${strip.name.toUpperCase()} ${t.name}`, colour: '#9fe8ff', runway: true };
 }
 
 /**
