@@ -17,9 +17,9 @@ function runwayTexture(strip) {
   g.fillStyle = '#827a74';
   g.fillRect(0, 0, 256, 4096);
   const random = createRandom(strip.length);
-  for (let i = 0; i < 2600; i += 1) {
-    g.fillStyle = random() > 0.5 ? 'rgba(150,142,134,0.45)' : 'rgba(96,90,88,0.45)';
-    g.fillRect(random() * 256, random() * 4096, 3 + random() * 14, 2 + random() * 30);
+  for (let i = 0; i < 9000; i += 1) {
+    g.fillStyle = random() > 0.5 ? 'rgba(150,142,134,0.35)' : 'rgba(96,90,88,0.35)';
+    g.fillRect(random() * 256, random() * 4096, 1 + random() * 4, 1 + random() * 6);
   }
   g.fillStyle = 'rgba(30,28,30,0.35)';
   for (let y = 600; y < 3500; y += 3) g.fillRect(118 + Math.sin(y * 0.01) * 6, y, 20, 3);

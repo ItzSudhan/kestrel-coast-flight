@@ -5,19 +5,19 @@
 // ?shot=cover|cockpit|board|result (&seed=N) stages that scene from a real seeded sortie
 // instead of running the game, paints it and sets window.__shotReady for a screenshot.
 import * as THREE from 'three';
-import { BEST_KEY, STEP } from './config.js';
-import { drawCockpitPanel } from './cockpit-panel.js';
-import { clearWreck, startWreck, touchdownDust } from './effects.js';
-import { createEngineAudio } from './engine-audio.js';
 import { approachInfo, createSession, dropCrate, readouts, stepSession, toggleFlaps, toggleGear } from './game-session.js';
-import { drawFlightHud, text } from './hud.js';
-import { createInput } from './input.js';
-import { paintMapImage } from './minimap.js';
-import { drawMissionBoard, poseForBoard } from './mission-board.js';
-import { MISSIONS } from './missions.js';
-import { drawResultCard } from './result-card.js';
-import { stageShot } from './shots.js';
 import { createWorldScene } from './world-scene.js';
+import { drawCockpitPanel } from './cockpit-panel.js';
+import { drawFlightHud, text } from './hud.js';
+import { drawMissionBoard, poseForBoard } from './mission-board.js';
+import { drawResultCard } from './result-card.js';
+import { createEngineAudio } from './engine-audio.js';
+import { createInput } from './input.js';
+import { clearWreck, startWreck, touchdownDust } from './effects.js';
+import { paintMapImage } from './minimap.js';
+import { MISSIONS } from './missions.js';
+import { stageShot } from './shots.js';
+import { BEST_KEY, STEP } from './config.js';
 
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
@@ -149,6 +149,7 @@ function handleActions(actions) {
     if (action === 'audio') audio.toggleMute();
     if (game.screen === 'board') {
       if (action.startsWith('pick')) showBoardSession(Number(action.slice(4)) - 1);
+      if (action === 'left' || action === 'right') showBoardSession((game.selected + (action === 'left' ? MISSIONS.length - 1 : 1)) % MISSIONS.length);
       if (action === 'confirm') startSortie(game.selected);
       continue;
     }
@@ -258,7 +259,7 @@ function runGame() {
             game.best[id] = Math.max(game.best[id] ?? 0, session.result.stars);
             saveBest();
           }
-          if (session.state === 'crashed') placeOrbit(session.aircraft, -0.8, 42, 14, new THREE.Vector3(9, -2, 9));
+          if (session.state === 'crashed') placeOrbit(session.aircraft, -0.8, 26, 7, new THREE.Vector3(6, 1, 6));
           else placeOrbit(session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
         }
       }
@@ -278,6 +279,13 @@ function runGame() {
   }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && game.screen === 'fly') game.screen = 'paused';
+  });
+  // Ctrl is the throttle-down key, and Ctrl+W would close the tab mid-sortie: ask first.
+  window.addEventListener('beforeunload', (event) => {
+    if (game.screen === 'fly' || game.screen === 'paused') {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   });
   announce('Kestrel Coast. Pick a sortie with 1 to 4, Enter to fly.');
   requestAnimationFrame(frame);

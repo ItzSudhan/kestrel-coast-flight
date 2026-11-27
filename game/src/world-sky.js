@@ -176,7 +176,7 @@ export function createClouds(seed = 5) {
 
 /** The sun's light, the sky and ground fill, matched to the dome. */
 export function createLights(scene) {
-  const sun = new THREE.DirectionalLight('#ffc58a', 2.7);
+  const sun = new THREE.DirectionalLight('#ffb878', 3.0);
   sun.position.copy(SUN_DIR).multiplyScalar(600);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -191,7 +191,7 @@ export function createLights(scene) {
   sun.shadow.normalBias = 0.4;
   scene.add(sun);
   scene.add(sun.target);
-  const fill = new THREE.HemisphereLight('#9fb0e6', '#a5714a', 1.05);
+  const fill = new THREE.HemisphereLight('#94a4e0', '#b27a4c', 1.0);
   scene.add(fill);
   return { sun, fill };
 }

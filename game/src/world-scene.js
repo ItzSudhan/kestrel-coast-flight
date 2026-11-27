@@ -2,18 +2,18 @@
 // lighthouse, storm, clouds, the aircraft and its effects) and moves it every frame to match the
 // sortie: rings, PAPI, lighthouse sweep, storm distance and lightning, rain, camera.
 import * as THREE from 'three';
-import { createAircraftModel, poseAircraftModel } from './aircraft-model.js';
-import { VIEW_CHASE, VIEW_COCKPIT, createCameraRig, updateCamera } from './chase-camera.js';
-import { createEffects, updateEffects, updateRescueProps } from './effects.js';
-import { createLighthouse, updateLighthouse } from './lighthouse.js';
-import { createRingMarkers, updateRingMarkers } from './ring-markers.js';
-import { stormGrip } from './storm-front.js';
-import { createStormVisuals, updateStormVisuals } from './storm-visuals.js';
-import { terrainHeight } from './terrain-height.js';
-import { createSettlements, updatePapi } from './town-and-airstrips.js';
+import { buildHeightGrid, createHeightTexture, createTerrainMesh } from './world-terrain.js';
 import { createSea } from './world-sea.js';
 import { FOG_WARM, atmosphere, createClouds, createLights, createSkyDome, followShadow, installAtmosphereFog } from './world-sky.js';
-import { buildHeightGrid, createHeightTexture, createTerrainMesh } from './world-terrain.js';
+import { createSettlements, updatePapi } from './town-and-airstrips.js';
+import { createLighthouse, updateLighthouse } from './lighthouse.js';
+import { createStormVisuals, updateStormVisuals } from './storm-visuals.js';
+import { createAircraftModel, poseAircraftModel } from './aircraft-model.js';
+import { VIEW_CHASE, VIEW_COCKPIT, createCameraRig, updateCamera } from './chase-camera.js';
+import { createRingMarkers, updateRingMarkers } from './ring-markers.js';
+import { createEffects, updateEffects, updateRescueProps } from './effects.js';
+import { stormGrip } from './storm-front.js';
+import { terrainHeight } from './terrain-height.js';
 
 export function createWorldScene(canvas) {
   installAtmosphereFog();
@@ -71,7 +71,7 @@ export function createWorldScene(canvas) {
     const a = session.aircraft;
     rig.mode = view;
     poseAircraftModel(model, a, controls, time, dt);
-    model.root.visible = view !== VIEW_COCKPIT && !a.crashed;
+    model.root.visible = view !== VIEW_COCKPIT || Boolean(a.crashed);
     model.root.updateMatrixWorld(true);
     updateCamera(rig, a, dt, snap);
     updateEffects(fx, a, model, dt, time);
@@ -88,8 +88,8 @@ export function createWorldScene(canvas) {
     sky.position.copy(camera.position);
     atmosphere.stormDark.value = Math.min(1, 0.4 + rain * 0.6);
     const dusk = 1 - rain * 0.45;
-    lights.sun.intensity = 2.7 * dusk;
-    lights.fill.intensity = 1.05 * (1 - rain * 0.2) + session.storm.flash * 1.6;
+    lights.sun.intensity = 3.0 * dusk;
+    lights.fill.intensity = 1.0 * (1 - rain * 0.2) + session.storm.flash * 1.6;
     scene.fog.near = 1600 * (1 - rain * 0.7);
     scene.fog.far = 17000 * (1 - rain * 0.55);
     followShadow(lights, view === VIEW_CHASE ? model.root.position : camera.position);

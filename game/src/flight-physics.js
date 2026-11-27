@@ -3,9 +3,9 @@
 // ground effect. Rates answer the stick at every speed (authority shrinks but never vanishes),
 // the nose weathervanes into the airflow, and the wheels roll, steer, brake and bounce.
 // Damage to engine, wings, gear and tail changes how she flies. Pure: runs in Node.
-import { AIRFRAME, FPM, FT, GRAVITY, KT, RHO } from './config.js';
-import { attitudeOf, dot, length, normalized, quatAxisAngle, quatFromAttitude, quatMultiply, quatNormalize, scaled, vec } from './flight-math.js';
 import { judgeContact } from './landing-grader.js';
+import { attitudeOf, dot, length, normalized, quatAxisAngle, quatFromAttitude, quatMultiply, quatNormalize, scaled, vec } from './flight-math.js';
+import { AIRFRAME, FPM, FT, GRAVITY, KT, RHO } from './config.js';
 import { TREE_HEIGHT } from './terrain-height.js';
 import { clamp, lerp } from './random.js';
 

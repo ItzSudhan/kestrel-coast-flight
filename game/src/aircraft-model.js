@@ -270,6 +270,15 @@ export function createAircraftModel() {
 export function poseAircraftModel(model, aircraft, controls, time, dt) {
   model.root.position.set(aircraft.pos.x, aircraft.pos.y, aircraft.pos.z);
   model.root.quaternion.set(aircraft.q[0], aircraft.q[1], aircraft.q[2], aircraft.q[3]);
+  if (aircraft.crashed) {
+    // The wreck: nosed in, a wing dug into the ground, prop stopped, gear torn off.
+    model.root.quaternion.setFromEuler(new THREE.Euler(-0.32, -aircraft.heading, 0.55, 'YXZ'));
+    model.root.position.y -= 0.9;
+    model.disc.visible = false;
+    model.blades.visible = true;
+    model.gear.visible = false;
+    return;
+  }
   const spin = (aircraft.rpm / 60) * Math.PI * 2;
   model.blades.rotation.z += spin * dt;
   const fast = aircraft.rpm > 900;

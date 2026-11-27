@@ -2,15 +2,15 @@
 // the supply crate, refuelling on a strip, radio chatter and the end (landed, crashed or shut
 // out by the storm). Pure and stepped at a fixed rate, so the game, the screenshot scenes and
 // the Node playtest all fly the same sortie.
-import { FT, KT } from './config.js';
 import { cycleFlaps, createAircraft, stepAircraft } from './flight-physics.js';
 import { gradeLanding } from './landing-grader.js';
 import { missionById, scoreSortie } from './missions.js';
-import { AIRSTRIPS, landingEnd, runwayLocal, runwayThreshold } from './places.js';
-import { createRandom } from './random.js';
 import { RING_RADIUS, ringCrossing, ringNormals } from './rings-course.js';
 import { createStorm, stepStorm, turbulenceAt, windAt } from './storm-front.js';
 import { groundAt } from './terrain-height.js';
+import { AIRSTRIPS, landingEnd, runwayLocal, runwayThreshold } from './places.js';
+import { FT, KT } from './config.js';
+import { createRandom } from './random.js';
 
 export const SPEAKER_RADIO = 'radio';
 export const SPEAKER_KEEPER = 'keeper';

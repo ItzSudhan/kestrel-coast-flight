@@ -108,7 +108,8 @@ export function clearWreck(fx) {
 
 /** Advance trails, puffs and debris; `model` is the aircraft model for wing-tip positions. */
 export function updateEffects(fx, aircraft, model, dt, time) {
-  const hard = aircraft.crashed ? 0 : Math.max(0, Math.min(1, (aircraft.gLoad - 1.5) / 1.2 + (aircraft.aoa - 0.16) * 5));
+  // Vortices show in hard turns, and faintly at high angle of attack in the damp pre-storm air.
+  const hard = aircraft.crashed || aircraft.onGround ? 0 : Math.max(0, Math.min(1, (aircraft.gLoad - 1.4) / 1.2 + Math.max(0, aircraft.aoa - 0.07) * 3 + aircraft.flaps * 0.12));
   fx.trails.forEach((trail, side) => {
     trail.strength += (hard - trail.strength) * Math.min(1, dt * 4);
     const tip = model.wingTips[side].clone().applyMatrix4(model.root.matrixWorld);

@@ -80,7 +80,7 @@ try {
   await send('Log.enable');
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
-  const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true })).result.value;
+  const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result.value;
 
   const capture = async (file) => {
     let quality = 90;
@@ -113,8 +113,15 @@ try {
     await key('KeyS', 's', 1200);
     await sleep(3000);
     await key('KeyG', 'g');
-    await key('KeyC', 'c');
-    await sleep(1500);
+    if (args.includes('--crash')) {
+      await key('KeyW', 'w', 9000);
+      await sleep(5000);
+    } else {
+      await key('KeyC', 'c');
+      await sleep(1500);
+    }
+    const fps = await evaluate('new Promise((resolve) => { let n = 0; const t0 = performance.now(); const tick = () => { n += 1; if (performance.now() - t0 < 2000) requestAnimationFrame(tick); else resolve(Math.round(n / 2)); }; requestAnimationFrame(tick); })');
+    console.log(`  frames per second (headless): ${fps}`);
     const state = await evaluate('document.getElementById("status").textContent');
     console.log(`  status line: ${state}`);
     await capture(join(root, 'out', 'play-check.jpg'));
