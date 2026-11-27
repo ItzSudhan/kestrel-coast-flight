@@ -93,6 +93,17 @@ for (let step = 0; step < 60 * 40 && stallTest.state === 'flying'; step += 1) {
 }
 check('holding full back stick with no power stalls', stalled, `${stallKt.toFixed(0)} kt`);
 
+// 3b. A novice takeoff: full power, then hauling full back stick from 50 kt for six seconds.
+const novice = createSession('rings', 5);
+let hauled = 0;
+for (let step = 0; step < 60 * 30 && novice.state === 'flying' && hauled < 6; step += 1) {
+  const kt = novice.aircraft.ias * KT;
+  const pulling = kt > 50 || hauled > 0;
+  if (pulling) hauled += STEP;
+  stepSession(novice, { pitch: pulling ? 1 : 0, roll: 0, yaw: 0, throttle: 1 }, STEP);
+}
+check('a full-aft-stick takeoff climbs away without crashing', novice.state === 'flying' && !novice.aircraft.onGround && novice.aircraft.agl > 10, `${novice.state}, ${novice.aircraft.agl.toFixed(0)} m AGL`);
+
 // 4. Controls answer at every speed: roll rate at 55 kt and at 110 kt.
 function rollRateAt(kt) {
   const s = createSession('storm', 3);

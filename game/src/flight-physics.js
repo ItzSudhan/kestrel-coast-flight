@@ -229,7 +229,10 @@ function stepInAir(aircraft, controls, acc, att, speed, stallAoa, dt) {
   const base = AIRFRAME.liftZero + AIRFRAME.flapLift * aircraft.flaps;
   const trimAoa = clamp((needCl - base) / AIRFRAME.liftSlope, -0.12, stallAoa - 0.025);
   const pull = controls.pitch ?? 0;
-  const aoaGoal = trimAoa + pull * (pull > 0 ? 0.3 : 0.24);
+  // A full pull asks for just past the stall angle: hold it and the wing lets go gently; a
+  // part pull at low speed stays flying. Pushing is never limited.
+  const pullRange = clamp(stallAoa + 0.035 - trimAoa, 0.1, 0.3);
+  const aoaGoal = trimAoa + pull * (pull > 0 ? pullRange : 0.24);
 
   let pitchRate = (aoaGoal - aircraft.aoa) * 2.8 * stability * tail + pull * 0.22 * authority * tail;
   let rollRate = (controls.roll ?? 0) * 2.1 * authority * (0.65 + 0.35 * wings);
@@ -237,8 +240,9 @@ function stepInAir(aircraft, controls, acc, att, speed, stallAoa, dt) {
   if (Math.abs(controls.roll ?? 0) < 0.05) rollRate -= att.bank * 0.22 * stability;
   rollRate += (1 - wings) * 0.22;
   if (aircraft.stalled) {
-    pitchRate -= 0.55;
-    rollRate += Math.sin(aircraft.time * 1.7) * 0.6 + 0.35;
+    const depth = clamp((aircraft.aoa - stallAoa) / 0.08, 0.25, 1);
+    pitchRate -= 0.55 * depth + 0.15;
+    rollRate += (Math.sin(aircraft.time * 1.7) * 0.6 + 0.35) * depth;
   }
   if (speed < 10) pitchRate -= 0.35 * (1 - speed / 10);
 
