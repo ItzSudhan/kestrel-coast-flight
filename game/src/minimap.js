@@ -1,7 +1,7 @@
 // The round moving map: the islands painted once from the height grid, the storm's edge, the
 // ring route, airstrips, lighthouse, town and the flare boat, with the aircraft at the centre.
 // M opens it full size.
-import { AIRSTRIPS, LIGHTHOUSE, MAP, TOWN, runwayAxes } from './places.js';
+import { AIRSTRIPS, ISLANDS, LIGHTHOUSE, MAP, TOWN, runwayAxes } from './places.js';
 import { STORM_NORMAL, STORM_ORIGIN, stormWallOffset } from './storm-front.js';
 
 /** Paint the islands from the height grid into an offscreen canvas, one pixel per grid cell. */
@@ -113,6 +113,26 @@ export function drawMinimap(g, image, cx, cy, r, range, session, whole = false) 
     g.beginPath();
     g.arc(sx(session.mission.boat.x), sy(session.mission.boat.z), 5, 0, Math.PI * 2);
     g.fill();
+  }
+  if (whole) {
+    g.font = '800 13px "Trebuchet MS", sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const labels = [
+      [AIRSTRIPS[0].name.toUpperCase(), AIRSTRIPS[0].x, AIRSTRIPS[0].z - 160],
+      [AIRSTRIPS[1].name.toUpperCase(), AIRSTRIPS[1].x, AIRSTRIPS[1].z - 620],
+      [TOWN.name.toUpperCase(), TOWN.x, TOWN.z + 220],
+      [LIGHTHOUSE.name.toUpperCase(), LIGHTHOUSE.x, LIGHTHOUSE.z + 420],
+      ...ISLANDS.filter((i) => !i.name.startsWith('Kestrel') && !i.name.startsWith('Puffin') && !i.name.startsWith('Gannet')).map((i) => [i.name.toUpperCase(), i.x, i.z + i.rz + 180]),
+      ['STORM FRONT', px + STORM_NORMAL.x * 700, pz + STORM_NORMAL.z * 700],
+    ];
+    for (const [name, x, z] of labels) {
+      g.fillStyle = 'rgba(10,12,20,0.7)';
+      const w = g.measureText(name).width + 10;
+      g.fillRect(sx(x) - w / 2, sy(z) - 9, w, 18);
+      g.fillStyle = name === 'STORM FRONT' ? '#c9b4ff' : '#fff1d6';
+      g.fillText(name, sx(x), sy(z));
+    }
   }
   g.restore();
 

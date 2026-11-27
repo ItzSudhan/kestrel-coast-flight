@@ -119,6 +119,8 @@ try {
     } else if (args.includes('--chase')) {
       await key('KeyD', 'd', 700);
       await sleep(2500);
+      if (args.includes('--map')) await key('KeyM', 'm');
+      await sleep(300);
     } else {
       await key('KeyC', 'c');
       await sleep(1500);
