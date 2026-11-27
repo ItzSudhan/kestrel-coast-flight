@@ -41,7 +41,7 @@ Pick a sortie on the mission board with **1–4** and press **Enter**. Every sor
 | R (hold) | Refuel and repair while stopped on an airstrip |
 | C | Chase view / cockpit view |
 | M | Full map |
-| P / Esc | Pause |
+| P / Esc | Pause (Backspace while paused returns to the mission board) |
 | T | Fly the sortie again |
 | Hold left mouse | Steer with the mouse |
 | N | Mute |

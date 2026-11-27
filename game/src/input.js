@@ -7,7 +7,7 @@ export const ACTIONS = ['flaps', 'gear', 'camera', 'map', 'pause', 'drop', 'conf
 const KEY_ACTIONS = {
   KeyF: 'flaps', KeyG: 'gear', KeyC: 'camera', KeyM: 'map', KeyP: 'pause', Escape: 'back', KeyX: 'drop',
   Enter: 'confirm', Space: 'confirm', KeyT: 'retry', Digit1: 'pick1', Digit2: 'pick2', Digit3: 'pick3', Digit4: 'pick4', KeyI: 'invert', KeyN: 'audio',
-  ArrowLeft: 'left', ArrowRight: 'right',
+  ArrowLeft: 'left', ArrowRight: 'right', Backspace: 'board',
 };
 
 export function createInput(target = window) {
@@ -26,6 +26,7 @@ export function createInput(target = window) {
   target.addEventListener('keyup', (event) => held.delete(event.code));
   target.addEventListener('blur', () => held.clear());
   target.addEventListener('pointerdown', (event) => {
+    queue.push('wake');
     if (event.button === 0) mouse.down = true;
     mouse.x = event.clientX;
     mouse.y = event.clientY;

@@ -3,7 +3,7 @@
 // grass, olive heath, warm cliff rock, turquoise shallows), plus a height texture the sea
 // shader reads for shallows and surf.
 import * as THREE from 'three';
-import { MAP } from './places.js';
+import { AIRSTRIPS, MAP, TOWN } from './places.js';
 import { hashCell, lerp, smoothstep } from './random.js';
 import { terrainHeight } from './terrain-height.js';
 import { shareAtmosphere } from './world-sky.js';
@@ -32,6 +32,22 @@ const HEATH = new THREE.Color('#9a8450');
 const ROCK = new THREE.Color('#a8876b');
 const ROCK_LIGHT = new THREE.Color('#c9a888');
 const PEAT = new THREE.Color('#7b6a4c');
+
+const FIELDS = ['#d9b85c', '#a9b64e', '#9c7a4c', '#c7c16a', '#86a845', '#e0c77a'].map((c) => new THREE.Color(c));
+
+/** Farm fields: a patchwork on low, gentle ground near the town and the airfield. */
+function fieldColour(out, x, z, height, steep, cc, rr) {
+  if (height < 4 || height > 55 || steep > 0.16) return null;
+  const nearTown = Math.hypot(x - TOWN.x, z - TOWN.z) < 2300;
+  const nearField = Math.hypot(x - AIRSTRIPS[0].x, (z - AIRSTRIPS[0].z) * 1.6) < 1700;
+  const nearCay = Math.hypot(x - AIRSTRIPS[1].x, z - AIRSTRIPS[1].z) < 900;
+  if (!nearTown && !nearField && !nearCay) return null;
+  const fx = Math.floor((cc + (rr >> 3)) / 3);
+  const fz = Math.floor((rr + (cc >> 4)) / 4);
+  if (hashCell(fx, fz, 404) < 0.35) return null;
+  out.copy(FIELDS[Math.floor(hashCell(fx, fz, 405) * FIELDS.length)]);
+  return out;
+}
 
 function groundColour(out, height, steep, patch) {
   if (height < -0.5) {
@@ -69,7 +85,7 @@ export function createTerrainMesh(grid) {
     const steep = Math.sqrt(Math.max(0, 1 - n.y * n.y)) / Math.max(n.y, 0.05);
     const mean = (p0.y + p1.y + p2.y) / 3;
     const patch = hashCell(cc, rr, 501 + salt) * 0.65 + hashCell(cc >> 2, rr >> 2, 77) * 0.35;
-    groundColour(colour, mean, steep, patch);
+    if (!fieldColour(colour, (p0.x + p1.x + p2.x) / 3, (p0.z + p1.z + p2.z) / 3, mean, steep, cc, rr)) groundColour(colour, mean, steep, patch);
     const light = lerp(0.94, 1.06, hashCell(cc, rr, 9 + salt));
     for (const p of [p0, p1, p2]) {
       positions.push(p.x, p.y, p.z);

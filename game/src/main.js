@@ -168,6 +168,11 @@ function handleActions(actions) {
     if (game.screen !== 'fly') {
       if (action === 'confirm') game.screen = 'fly';
       if (action === 'retry') startSortie(game.selected);
+      if (action === 'board') {
+        game.screen = 'board';
+        clearWreck(world.fx);
+        showBoardSession(game.selected);
+      }
       continue;
     }
     if (action === 'flaps') {
@@ -225,7 +230,7 @@ function drawOverlay(dt) {
     g.fillStyle = 'rgba(5,6,10,0.6)';
     g.fillRect(0, 0, W, H);
     text(g, 'PAUSED', W / 2, H / 2 - 20, 56, '#fff4e0', 'center', 900);
-    text(g, 'P TO FLY ON · T TO RESTART THE SORTIE · ESC FOR THE BOARD AFTER LANDING', W / 2, H / 2 + 30, 16, '#ffb347', 'center', 800);
+    text(g, 'P / ESC FLY ON · T RESTART THE SORTIE · BACKSPACE MISSION BOARD', W / 2, H / 2 + 30, 16, '#ffb347', 'center', 800);
   }
   void dt;
 }
