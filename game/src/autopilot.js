@@ -98,11 +98,14 @@ export function approach(a, strip, reversed) {
 }
 
 /**
- * A pilot for a whole sortie (rings or a straight landing): it works the gear and flaps by
- * hand like a player and returns each step's controls. `act(name)` is called for toggles.
+ * A pilot for a whole sortie (the rings, the mail run or a straight landing): it works the gear
+ * and flaps by hand like a player and returns each step's controls. `act(name)` is called for
+ * toggles. On the mail run it cruises at a fuel-saving throttle to a fix south of Puffin Cay.
  */
 export function createSortiePilot(session, act) {
-  const strip = AIRSTRIPS[0];
+  const home = AIRSTRIPS[0];
+  const mail = session.mission.finish === 'land-puffin';
+  const strip = mail ? AIRSTRIPS[1] : home;
   let phase = session.aircraft.onGround ? 'takeoff' : session.rings.length ? 'rings' : 'land';
   let cleaned = !session.aircraft.onGround;
   let configured = false;
@@ -110,8 +113,21 @@ export function createSortiePilot(session, act) {
   return function controlsFor() {
     const a = session.aircraft;
     if (phase === 'takeoff') {
-      if (!a.onGround && a.agl > 40) phase = 'rings';
-      return takeoff(a, strip, false);
+      if (!a.onGround && a.agl > 40) phase = mail ? 'cruise' : 'rings';
+      return takeoff(a, home, false);
+    }
+    if (phase === 'cruise') {
+      if (!cleaned && a.agl > 70) {
+        cleaned = true;
+        if (a.gearDown) act('gear');
+        while (a.flapDetent !== 0) act('flaps');
+      }
+      const t = runwayThreshold(strip, false);
+      const fix = { x: t.x - t.ax * 1600, y: 170, z: t.z - t.az * 1600 };
+      if (Math.hypot(a.pos.x - fix.x, a.pos.z - fix.z) < 450) phase = 'land';
+      const c = flyToward(a, a.pos.x < 2600 ? { ...fix, y: 190 } : fix, 92);
+      c.throttle = Math.min(c.throttle, a.pos.x < 2600 ? 0.55 : 0.4);
+      return c;
     }
     if (!cleaned && a.agl > 70) {
       cleaned = true;

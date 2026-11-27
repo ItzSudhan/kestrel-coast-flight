@@ -1,7 +1,8 @@
 // The screenshot scenes behind ?shot=cover|cockpit|board|result (with &seed=N). Each one flies
 // a real sortie forward from its start with the seeded sortie pilot, through the game's own
 // rules, and stops at a moment worth showing: the cover banking toward ring 8 on final for 09,
-// the cockpit on a stormy final, the mission board, and the landing card after a full course.
+// the cockpit on a stormy final, the mission board, and the landing card at Puffin Cay after
+// the mail run, flown at a fuel-saving cruise.
 import { STEP } from './config.js';
 import { createSortiePilot, flyToward } from './autopilot.js';
 import { createAircraft } from './flight-physics.js';
@@ -33,7 +34,8 @@ export function stageShot(name, seed) {
     return { screen: 'board', session, view: 'orbit', pilot: null, settle: 0, best: { rings: 3, mail: 2, rescue: 1 } };
   }
   if (name === 'result') {
-    const session = createSession('rings', seed);
+    // The mail run, flown at a fuel-saving cruise all the way to Puffin Cay.
+    const session = createSession('mail', seed);
     flyUntil(session, pilotFor(session), () => false, 900);
     return { screen: 'result', session, view: 'orbit', pilot: null, settle: 0 };
   }

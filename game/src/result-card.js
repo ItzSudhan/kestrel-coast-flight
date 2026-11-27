@@ -116,7 +116,8 @@ export function drawResultCard(g, W, H, session) {
     ry += 34;
     row(g, x + 24, ry, inner, 'Runway', `${l.runwayName} · ${l.strip.name}${l.bounces ? ` · ${l.bounces} bounce` : ''}`);
     ry += 34;
-    row(g, x + 24, ry, inner, 'Fuel left', `${Math.round(session.aircraft.fuel)}%`, session.aircraft.fuel < 10 ? '#ff8a75' : '#ffffff');
+    const fuel = session.aircraft.fuel;
+    row(g, x + 24, ry, inner, 'Fuel left', `${Math.round(fuel)}%${fuel >= 8 && m.objectives.some((o) => o.id === 'fuel-reserve') ? ' · RESERVE KEPT' : ''}`, fuel < 8 ? '#ff8a75' : fuel < 15 ? '#ffc94a' : '#ffffff');
     ry += 34;
     row(g, x + 24, ry, inner, 'Time', `${clock(session.time)}  /  PAR ${clock(m.par)}`, session.time <= m.par ? '#9dffb8' : '#ff8a75');
     ry += 34;
