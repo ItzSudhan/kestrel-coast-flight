@@ -1,5 +1,5 @@
 // The Beacon Rings course: eight lit rings that take the pilot off Kestrel Field, round the
-// island's east coast, past Gannet Light and the north shore, out over the western sea and back
+// island's east coast and along the north shore, out over the western sea and back
 // onto the final approach for runway 09. Each ring faces along the course; a pass is a crossing
 // of its plane inside its radius.
 

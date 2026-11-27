@@ -48,7 +48,7 @@ Pick a sortie on the mission board with **1–4** and press **Enter**. Every sor
 
 ## Missions
 
-1. **Beacon Rings** (ring course): take off from Kestrel Field, fly the eight lit rings around the island past Gannet Light, and land on runway 09 under par.
+1. **Beacon Rings** (ring course): take off from Kestrel Field, fly the eight lit rings around the island and out over the western sea, and land on runway 09 under par.
 2. **Mail to Puffin Cay** (mail run): fly the keepers' mail 7 km east to the Puffin Cay strip on 30% fuel and land with at least 8% left.
 3. **Flare off West Skerry** (search and rescue): find the skiff under the red flare, drop the supply crate within 60 m of it, and get back to Kestrel Field.
 4. **Last Light Landing** (storm landing): the front is on the coast. Land in rain and a gusting crosswind, under 300 fpm, on the centreline, without damage.

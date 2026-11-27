@@ -102,7 +102,7 @@ export function drawMissionBoard(g, W, H, selected, best, stormKm, time) {
   g.fill();
   g.strokeStyle = 'rgba(190,160,255,0.7)';
   g.stroke();
-  text(g, `⚡ STORM FRONT ${stormKm.toFixed(1)} KM OFF GANNET ROCK · CLOSING`, 62, 154, 16, '#ffffff', 'left', 800);
+  text(g, `⚡ STORM FRONT ${stormKm.toFixed(1)} KM OFF THE NORTH COAST · CLOSING`, 62, 154, 16, '#ffffff', 'left', 800);
   text(g, 'The keepers of Gannet Light need supplies before the storm shuts the coast.', 44, 192, 17, 'rgba(255,244,224,0.9)', 'left', 600);
 
   const cardW = 292;

@@ -5,7 +5,7 @@
 /** Islands: centre, radii, hill peak, cliff lift at the shore, and a few shaping knobs. */
 export const ISLANDS = [
   { name: 'Kestrel Isle', x: -200, z: 500, rx: 2700, rz: 1750, peak: 250, cliff: 0, beach: 1.4, shelf: 140, seed: 11, northHills: true },
-  { name: 'Gannet Rock', x: 1900, z: -2550, rx: 520, rz: 430, peak: 46, cliff: 34, beach: 0.5, shelf: 200, seed: 23 },
+  { name: 'Gannet Rock', x: 2350, z: 2200, rx: 420, rz: 360, peak: 40, cliff: 34, beach: 0.5, shelf: 200, seed: 23 },
   { name: 'Puffin Cay', x: 5300, z: -500, rx: 950, rz: 1350, peak: 70, cliff: 0, beach: 1.6, shelf: 120, seed: 37 },
   { name: 'West Skerry', x: -3500, z: -1700, rx: 480, rz: 360, peak: 52, cliff: 10, beach: 0.8, shelf: 160, seed: 41 },
   { name: 'Seal Holm', x: -4300, z: 2300, rx: 380, rz: 300, peak: 30, cliff: 6, beach: 1, shelf: 150, seed: 53 },
@@ -25,7 +25,7 @@ export const AIRSTRIPS = [
 export const TOWN = { name: 'Kestrel Harbour', x: -900, z: 1750, radius: 520 };
 
 /** Gannet Rock lighthouse (its foot; the tower stands on the rock's top). */
-export const LIGHTHOUSE = { name: 'Gannet Light', x: 1900, z: -2560 };
+export const LIGHTHOUSE = { name: 'Gannet Light', x: 2350, z: 2190 };
 
 /** Where the flare boat drifts in the search-and-rescue sortie. */
 export const FLARE_BOAT = { x: -2300, z: -3700 };

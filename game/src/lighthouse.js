@@ -14,7 +14,7 @@ function beamMaterial() {
     side: THREE.DoubleSide,
     uniforms: { strength: { value: 1 } },
     vertexShader: 'varying float vAlong; void main() { vAlong = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform float strength; varying float vAlong; void main() { float a = pow(vAlong, 2.2) * 0.32 * strength; gl_FragColor = vec4(vec3(1.0, 0.9, 0.62) * a, a); }',
+    fragmentShader: 'uniform float strength; varying float vAlong; void main() { float a = (0.22 + 0.78 * pow(vAlong, 1.4)) * 0.95 * strength; gl_FragColor = vec4(vec3(1.0, 0.93, 0.7) * a, a); }',
   });
 }
 
@@ -58,8 +58,8 @@ export function createLighthouse() {
   beam.position.y = height + 2.4;
   const material = beamMaterial();
   for (const side of [1, -1]) {
-    const cone = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 70, 900, 20, 1, true), material);
-    cone.geometry.translate(0, -450, 0);
+    const cone = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 120, 1700, 20, 1, true), material);
+    cone.geometry.translate(0, -850, 0);
     cone.rotation.z = (side * Math.PI) / 2 + side * 0.04;
     beam.add(cone);
   }
@@ -77,6 +77,6 @@ export function updateLighthouse(lighthouse, time, eye) {
   lighthouse.beam.rotation.y = angle;
   const toEye = Math.atan2(eye.z - lighthouse.group.position.z, eye.x - lighthouse.group.position.x);
   const facing = Math.abs(Math.cos(angle + toEye));
-  const s = 30 + Math.pow(facing, 30) * 90;
+  const s = 90 + Math.pow(facing, 30) * 180;
   lighthouse.glare.scale.set(s, s, 1);
 }
