@@ -256,11 +256,19 @@ function runGame() {
   showBoardSession(0);
   let accumulator = 0;
   let last = performance.now();
+  // On a slow machine or a very dense screen, drop to one render pixel per CSS pixel.
+  let slowFrames = 0;
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
     game.time += dt;
+    slowFrames = dt > 0.03 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
+    if (slowFrames > 90 && world.renderer.getPixelRatio() > 1) {
+      world.renderer.setPixelRatio(1);
+      resize();
+      slowFrames = 0;
+    }
     handleActions(game.input.takeActions());
     const session = game.session;
     let view = game.view;
