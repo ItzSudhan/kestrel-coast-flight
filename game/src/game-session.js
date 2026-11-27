@@ -60,6 +60,20 @@ export function say(session, who, text) {
   if (session.radio.length > 6) session.radio.shift();
 }
 
+/** What Kestrel Radio says as each beacon ring lights. */
+function ringCall(lit, km) {
+  const calls = [
+    'First beacon lit. Follow them round the east cape.',
+    `Two lit. Front is ${km.toFixed(0)} km out and closing.`,
+    'Three. Keep her high over the north ridge.',
+    `Four lit, halfway. Storm ${km.toFixed(0)} km.`,
+    'Five. Out over the western sea now.',
+    `Ring 6 lit. Storm ${km.toFixed(0)} km out.`,
+    'Seven lit. Last ring sits on short final for 09. Gear down, three green.',
+  ];
+  return `Kestrel Radio: ${calls[lit - 1] ?? `Ring ${lit} lit.`}`;
+}
+
 function complete(session, id) {
   const objective = session.objectives.find((o) => o.id === id);
   if (objective && !objective.done) {
@@ -253,7 +267,7 @@ export function stepSession(session, controls, dt) {
       if (session.nextRing === session.rings.length) {
         complete(session, 'rings');
         say(session, SPEAKER_RADIO, 'Kestrel Radio: All eight lit! Runway 09, cleared to land.');
-      } else if (session.nextRing % 2 === 0) say(session, SPEAKER_RADIO, `Kestrel Radio: Ring ${session.nextRing} lit. Storm ${storm.km.toFixed(0)} km out.`);
+      } else say(session, SPEAKER_RADIO, ringCall(session.nextRing, storm.km));
     }
   }
 
