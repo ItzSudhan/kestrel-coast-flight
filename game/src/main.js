@@ -275,6 +275,7 @@ function runGame() {
           game.screen = 'result';
           if (session.state === 'complete') {
             const id = session.mission.id;
+            session.result.newBest = session.result.stars > (game.best[id] ?? 0);
             game.best[id] = Math.max(game.best[id] ?? 0, session.result.stars);
             saveBest();
           }

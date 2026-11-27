@@ -128,6 +128,13 @@ export function drawResultCard(g, W, H, session) {
     text(g, 'SCORE', x + 24, ry, 18, AMBER, 'left', 800);
     text(g, String(result.total), x + 24, ry + 38, 50, '#ffffff', 'left', 900);
     drawStars(g, x + w - 24 - 150, ry + 26, result.stars, 44);
+    if (result.newBest) {
+      g.fillStyle = '#ffd54a';
+      g.beginPath();
+      g.roundRect(x + w - 24 - 112, ry - 14, 112, 22, 11);
+      g.fill();
+      text(g, 'NEW BEST', x + w - 24 - 56, ry - 2, 13, '#1a1408', 'center', 900);
+    }
   } else {
     stamp(g, x + w / 2, y + 130, session.state === 'crashed' ? 'CRASHED' : result.stamp ?? 'SORTIE FAILED', '#ff5a45', -0.08);
     text(g, 'CAUSE', x + 24, y + 210, 15, AMBER, 'left', 800);
