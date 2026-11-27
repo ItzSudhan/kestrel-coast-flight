@@ -17,6 +17,7 @@ import { clearWreck, startWreck, touchdownDust } from './effects.js';
 import { paintMapImage } from './minimap.js';
 import { MISSIONS } from './missions.js';
 import { stageShot } from './shots.js';
+import { stormGrip } from './storm-front.js';
 import { BEST_KEY, STEP } from './config.js';
 
 const params = new URLSearchParams(window.location.search);
@@ -218,7 +219,11 @@ function drawOverlay() {
     return;
   }
   const read = readouts(session);
-  if (game.view === 'cockpit') drawCockpitPanel(g, W, H, session, read);
+  if (game.view === 'cockpit') {
+    const a = session.aircraft;
+    const rain = Math.max(session.mission.rain ? 0.75 : 0, stormGrip(session.storm, a.pos.x, a.pos.z));
+    drawCockpitPanel(g, W, H, session, read, rain);
+  }
   drawFlightHud(g, {
     session,
     read,

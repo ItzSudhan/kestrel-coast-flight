@@ -5,6 +5,7 @@
 import { drawSixPack } from './gauges.js';
 import { FONT, text } from './hud.js';
 import { SPEAKERS, drawPortrait } from './radio-portraits.js';
+import { createRandom } from './random.js';
 
 function screw(g, x, y) {
   g.fillStyle = '#7d8089';
@@ -188,9 +189,41 @@ function statusBlock(g, x, y, w, aircraft) {
   });
 }
 
+/**
+ * Rain on the windscreen: beads that sit and streaks the slipstream drags sideways and up,
+ * thicker the harder it rains. Seeded so a frame is repeatable; it shifts with time.
+ */
+function rainOnGlass(g, W, top, amount, time, windSide) {
+  if (amount <= 0.02) return;
+  const random = createRandom(4242);
+  const count = Math.round(140 * amount);
+  for (let i = 0; i < count; i += 1) {
+    const x0 = 160 + random() * (W - 320);
+    const y0 = 50 + random() * (top - 60);
+    const speed = 40 + random() * 160;
+    const life = (time * speed * 0.01 + random()) % 1;
+    const len = 6 + random() * 26;
+    const x = x0 + life * 60 * windSide;
+    const y = y0 - life * 30;
+    g.strokeStyle = `rgba(220,232,255,${0.18 + random() * 0.25})`;
+    g.lineWidth = 1 + random() * 1.6;
+    g.beginPath();
+    g.moveTo(x, y);
+    g.lineTo(x - len * 0.8 * windSide, y + len * 0.45);
+    g.stroke();
+    if (random() < 0.4) {
+      g.fillStyle = 'rgba(235,242,255,0.35)';
+      g.beginPath();
+      g.arc(x0 + random() * 30, y0 + random() * 20, 1.5 + random() * 2.5, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+}
+
 /** Draw the cockpit interior and its live instruments. */
-export function drawCockpitPanel(g, W, H, session, read) {
+export function drawCockpitPanel(g, W, H, session, read, rain = 0) {
   const top = H - 330;
+  rainOnGlass(g, W, top, rain, session.time, read.bankDeg > 0 ? -1 : 1);
   frameAndShield(g, W, H, top);
   const r = 60;
   const cx = W / 2 - 120;
