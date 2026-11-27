@@ -35,8 +35,9 @@ export function drawDivertPanel(g, W, H, session) {
   const crisis = session.crisis;
   if (!crisis || crisis.state !== 'open') return;
   const { divert, push } = crisis.options;
-  const w = 720;
-  const x = (W - w) / 2;
+  // Between the checklist on the left and the altitude box on the right.
+  const w = 716;
+  const x = Math.max(342, (W - w) / 2);
   const y = 156;
   const head = 'STORM CLOSING · THE FRONT HAS CUT YOUR ROUTE';
   g.fillStyle = 'rgba(40,10,30,0.88)';

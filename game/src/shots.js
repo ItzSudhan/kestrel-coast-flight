@@ -118,7 +118,7 @@ export function stageShot(name, seed) {
         say(s, SPEAKER_PILOT, 'Clipped the pines on the ridge! Left wing’s torn.');
       }
     });
-    boltInView(session, -34, (SETTLE_STEPS + 30) * STEP);
+    boltInView(session, -30, (SETTLE_STEPS + 30) * STEP);
     return { screen: 'fly', session, view: 'chase', pilot, settle: SETTLE_STEPS };
   }
   // The cover: Beacon Rings on final through ring 8, having pushed through the squall.
