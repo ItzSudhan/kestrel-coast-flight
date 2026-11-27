@@ -137,6 +137,9 @@ export function createAircraftModel() {
   body.add(wing);
   const ailerons = [];
   const flaps = [];
+  // Damage that shows: scorched holes, a torn skin flap and the tip cap, per wing (damage-model.js says which).
+  const scorch = new THREE.MeshStandardMaterial({ color: '#2b211c', flatShading: true, roughness: 0.95 });
+  const wingDamage = {};
   for (const side of [-1, 1]) {
     const half = new THREE.Group();
     half.rotation.z = side * 0.035;
@@ -146,7 +149,22 @@ export function createAircraftModel() {
     const nose = new THREE.CylinderGeometry(0.1, 0.1, 5.6, 8);
     nose.rotateZ(Math.PI / 2);
     half.add(part(nose, cream, side * 3.1, 0, -0.78));
-    half.add(part(new THREE.BoxGeometry(0.5, 0.22, 1.42), rust, side * 6.0, 0, -0.28));
+    const tipCap = part(new THREE.BoxGeometry(0.5, 0.22, 1.42), rust, side * 6.0, 0, -0.28);
+    half.add(tipCap);
+    const holes = [[2.3, -0.1, 0.62, 0.42], [3.7, -0.35, 0.48, 0.36], [5.0, 0.05, 0.56, 0.5]].map(([x, z, w, d]) => {
+      const hole = part(new THREE.BoxGeometry(w, 0.05, d), scorch, side * x, 0.105, z);
+      hole.rotation.y = side * 0.3;
+      hole.visible = false;
+      half.add(hole);
+      return hole;
+    });
+    const skin = new THREE.Group();
+    skin.position.set(side * 4.3, 0.1, 0.25);
+    const skinPanel = part(new THREE.BoxGeometry(0.7, 0.02, 0.55), cream, 0, 0, 0.27);
+    skin.add(skinPanel);
+    skin.visible = false;
+    half.add(skin);
+    wingDamage[side] = { tipCap, holes, skin };
     half.add(part(new THREE.BoxGeometry(5.6, 0.03, 0.18), rust, side * 3.1, 0.115, -0.55));
     const aileron = hinged(2.3, 0.38, 0.09, navy, side * 4.55, 0, 0.42);
     const flap = hinged(2.55, 0.4, 0.1, cream, side * 1.75, -0.02, 0.42);
@@ -266,13 +284,33 @@ export function createAircraftModel() {
   }
   const strobe = navLights[2];
 
-  return { root, body, cabin, prop, blades, disc, ailerons, flaps, elevator, rudder: rudderPivot, gear, strobe, wingTips: [new THREE.Vector3(-6.2, 1.28, -0.4), new THREE.Vector3(6.2, 1.28, -0.4)] };
+  return { root, body, cabin, prop, blades, disc, ailerons, flaps, elevator, rudder: rudderPivot, gear, strobe, wingDamage, wingTips: [new THREE.Vector3(-6.2, 1.28, -0.4), new THREE.Vector3(6.2, 1.28, -0.4)] };
+}
+
+/**
+ * Show the wing damage on the damaged side: scorched holes as it worsens, a skin flap that
+ * flutters in the slipstream, and the tip cap gone below two thirds.
+ */
+function showWingDamage(model, aircraft, time) {
+  const harm = 1 - aircraft.damage.wings;
+  const hurtSide = aircraft.wingSide ?? 1;
+  for (const side of [-1, 1]) {
+    const d = model.wingDamage[side];
+    const on = side === hurtSide ? harm : 0;
+    d.holes.forEach((hole, i) => {
+      hole.visible = on > 0.08 + i * 0.12;
+    });
+    d.skin.visible = on > 0.12;
+    d.skin.rotation.x = -0.5 - Math.abs(Math.sin(time * 23 + side)) * 0.6;
+    d.tipCap.visible = on < 0.33;
+  }
 }
 
 /** Pose the model from the aircraft state and the pilot's inputs. */
 export function poseAircraftModel(model, aircraft, controls, time, dt) {
   model.root.position.set(aircraft.pos.x, aircraft.pos.y, aircraft.pos.z);
   model.root.quaternion.set(aircraft.q[0], aircraft.q[1], aircraft.q[2], aircraft.q[3]);
+  showWingDamage(model, aircraft, time);
   if (aircraft.crashed) {
     // The wreck: nosed in, a wing dug into the ground, prop stopped, gear torn off.
     model.root.quaternion.setFromEuler(new THREE.Euler(-0.32, -aircraft.heading, 0.55, 'YXZ'));

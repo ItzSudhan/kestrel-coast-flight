@@ -175,10 +175,12 @@ export function updateEffects(fx, aircraft, model, dt, time) {
     colours.needsUpdate = true;
   });
   fx.puffTimer -= dt;
-  if (!aircraft.crashed && aircraft.damage.engine < 0.6 && fx.puffTimer <= 0) {
-    fx.puffTimer = 0.08;
+  // A hurt engine trails smoke: grey and thin at first, thick and black when it is failing.
+  if (!aircraft.crashed && aircraft.damage.engine < 0.8 && fx.puffTimer <= 0) {
+    const e = aircraft.damage.engine;
+    fx.puffTimer = e < 0.6 ? 0.08 : 0.14;
     const p = new THREE.Vector3(0.4, -0.4, -3).applyMatrix4(model.root.matrixWorld);
-    emitPuff(fx, p, aircraft.damage.engine < 0.3 ? '#2b2b2e' : '#777', 2.5, 2.2, new THREE.Vector3(0, 1, 0));
+    emitPuff(fx, p, e < 0.3 ? '#2b2b2e' : e < 0.6 ? '#777' : '#9a9aa0', e < 0.6 ? 2.5 : 1.8, 2.2, new THREE.Vector3(0, 1, 0));
   }
   if (fx.wreckAt && fx.puffTimer <= 0) {
     fx.puffTimer = 0.07;
