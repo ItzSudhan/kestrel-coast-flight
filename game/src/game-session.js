@@ -123,15 +123,35 @@ function nearStrip(a) {
   return null;
 }
 
+/** One step of a falling crate: gravity, and air drag on its forward travel. */
+function fallStep(pos, vel, dt) {
+  vel.y -= 9.81 * dt;
+  vel.x *= 1 - dt * 0.12;
+  vel.z *= 1 - dt * 0.12;
+  pos.x += vel.x * dt;
+  pos.y += vel.y * dt;
+  pos.z += vel.z * dt;
+}
+
+/**
+ * Where a crate let go right now would land, and how far that is from the boat: the rescue
+ * sortie's drop cue. Null when there is no crate to drop.
+ */
+export function predictCrate(session) {
+  const crate = session.crate;
+  const a = session.aircraft;
+  if (!crate || crate.dropped || a.onGround) return null;
+  const pos = { x: a.pos.x, y: a.pos.y - 1.5, z: a.pos.z };
+  const vel = { ...a.vel };
+  for (let i = 0; i < 400 && pos.y > 0.4; i += 1) fallStep(pos, vel, 0.05);
+  const boat = session.mission.boat;
+  return { x: pos.x, z: pos.z, miss: Math.hypot(pos.x - boat.x, pos.z - boat.z) };
+}
+
 function stepCrate(session, dt) {
   const crate = session.crate;
   if (!crate || !crate.dropped || crate.landed) return;
-  crate.vel.y -= 9.81 * dt;
-  crate.vel.x *= 1 - dt * 0.12;
-  crate.vel.z *= 1 - dt * 0.12;
-  crate.pos.x += crate.vel.x * dt;
-  crate.pos.y += crate.vel.y * dt;
-  crate.pos.z += crate.vel.z * dt;
+  fallStep(crate.pos, crate.vel, dt);
   const ground = groundAt(crate.pos.x, crate.pos.z);
   if (crate.pos.y <= ground.height + 0.4) {
     crate.landed = true;

@@ -3,9 +3,9 @@
 // the flight model and the landing grader behave. Also flies a deliberate stall and a hard
 // landing to check the crash causes. Run: node tools/playtest.mjs
 import { STEP, KT, FT } from '../game/src/config.js';
-import { createSession, stepSession, toggleFlaps, toggleGear, readouts } from '../game/src/game-session.js';
-import { approach, flyRing, takeoff, homeStrip } from '../game/src/autopilot.js';
-import { stallSpeed } from '../game/src/flight-physics.js';
+import { createSession, dropCrate, predictCrate, stepSession, toggleFlaps, toggleGear, readouts } from '../game/src/game-session.js';
+import { approach, flyRing, flyToward, takeoff, homeStrip } from '../game/src/autopilot.js';
+import { createAircraft, stallSpeed } from '../game/src/flight-physics.js';
 import { gradeLanding, judgeContact } from '../game/src/landing-grader.js';
 
 let failures = 0;
@@ -105,7 +105,24 @@ const fastRoll = rollRateAt(110);
 check('roll answers at 55 kt', slowRoll > 0.6, `${slowRoll.toFixed(2)} rad/s`);
 check('roll answers at 110 kt', fastRoll > slowRoll, `${fastRoll.toFixed(2)} rad/s`);
 
-// 5. The grader and the crash causes.
+// 5. Search and rescue: run in low over the flare boat and drop the crate with a lead.
+const rescue = createSession('rescue', 4);
+const boat = rescue.mission.boat;
+rescue.aircraft = createAircraft({ x: boat.x - 900, y: 60, z: boat.z, heading: 90, speedKt: 72, throttle: 0.5, flapDetent: 1, gearDown: true, fuel: 60 });
+let dropped = false;
+let lastMiss = Infinity;
+for (let step = 0; step < 60 * 60 && !rescue.crate.landed; step += 1) {
+  const a = rescue.aircraft;
+  const predicted = predictCrate(rescue);
+  if (!dropped && predicted && predicted.miss < 50 && predicted.miss > lastMiss) dropped = dropCrate(rescue);
+  if (predicted) lastMiss = predicted.miss;
+  const aim = boat.x - a.pos.x > 200 ? { x: boat.x, y: 60, z: boat.z } : { x: a.pos.x + a.vel.x * 10, y: 60, z: a.pos.z + a.vel.z * 10 };
+  stepSession(rescue, flyToward(a, aim, 72), STEP);
+}
+check('the flare boat was found', rescue.objectives.find((o) => o.id === 'find-boat').done);
+check('the crate landed by the boat', rescue.objectives.find((o) => o.id === 'drop-crate').done, `missed by ${rescue.crate.missBy} m`);
+
+// 6. The grader and the crash causes.
 const soft = judgeContact({ vsFpm: -120, kt: 58, bankDeg: 1, pitchDeg: 4, surface: 'runway', slope: 0, gearDown: true, gearHealth: 1, stall: null });
 const hard = judgeContact({ vsFpm: -1300, kt: 70, bankDeg: 2, pitchDeg: 0, surface: 'runway', slope: 0, gearDown: true, gearHealth: 1, stall: null });
 const stallCrash = judgeContact({ vsFpm: -1500, kt: 40, bankDeg: 20, pitchDeg: -20, surface: 'grass', slope: 0.1, gearDown: true, gearHealth: 1, stall: { kt: 42, ft: 80 } });

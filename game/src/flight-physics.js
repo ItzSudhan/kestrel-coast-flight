@@ -263,7 +263,8 @@ function stepOnGround(aircraft, controls, acc, ground, gearHeight, att, dt) {
   along += (acc.x * fx + acc.z * fz) * dt;
   lateral *= Math.exp(-dt * 9);
   const surface = ground.surface;
-  const rolling = surface === 'runway' ? 0.3 : surface === 'sand' ? 2.4 : 1.1;
+  const idle = aircraft.throttle < 0.12 ? 0.6 : 0;
+  const rolling = (surface === 'runway' ? 0.35 : surface === 'sand' ? 2.4 : 1.1) + idle;
   const braking = aircraft.brakes ? (surface === 'runway' ? 4.2 : 2.4) * (0.4 + 0.6 * aircraft.damage.gear) : 0;
   const friction = (rolling + braking) * dt;
   along = Math.abs(along) <= friction ? 0 : along - Math.sign(along) * friction;

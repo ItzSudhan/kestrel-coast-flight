@@ -10,6 +10,7 @@ import { SPEAKERS, drawPortrait } from './radio-portraits.js';
 import { AIRSTRIPS, runwayThreshold } from './places.js';
 import { stallSpeed } from './flight-physics.js';
 import { AIRFRAME, KT } from './config.js';
+import { predictCrate } from './game-session.js';
 
 export const FONT = '"Trebuchet MS", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const PANEL = 'rgba(12,14,22,0.66)';
@@ -384,6 +385,42 @@ function targetMarker(g, frame, target, labelText, colour) {
   text(g, `${labelText} · ${distText}`, ex, ey + 22, 14, colour, 'center', 800);
 }
 
+/** The rescue drop cue: where the crate would land if let go now, and how far off the boat. */
+function dropCue(g, frame) {
+  const session = frame.session;
+  const boat = session.mission.boat;
+  if (!boat || !session.crate || session.crate.dropped) return;
+  const a = session.aircraft;
+  if (Math.hypot(a.pos.x - boat.x, a.pos.z - boat.z) > 1200) return;
+  const p = predictCrate(session);
+  if (!p) return;
+  const good = p.miss < 45;
+  const spot = frame.project(p.x, 1, p.z);
+  if (spot.visible) {
+    g.strokeStyle = good ? GREEN : '#ffffff';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.arc(spot.x, spot.y, 10, 0, Math.PI * 2);
+    g.moveTo(spot.x - 16, spot.y);
+    g.lineTo(spot.x + 16, spot.y);
+    g.moveTo(spot.x, spot.y - 16);
+    g.lineTo(spot.x, spot.y + 16);
+    g.stroke();
+  }
+  const W = frame.designWidth;
+  const label = good ? 'DROP NOW · X' : `CRATE WOULD MISS BY ${Math.round(p.miss)} M`;
+  g.font = `800 20px ${FONT}`;
+  const w = g.measureText(label).width + 40;
+  g.fillStyle = good ? 'rgba(10,40,22,0.85)' : 'rgba(12,14,22,0.75)';
+  g.beginPath();
+  g.roundRect(W / 2 - w / 2, 176, w, 34, 8);
+  g.fill();
+  g.strokeStyle = good ? GREEN : AMBER;
+  g.lineWidth = 2;
+  g.stroke();
+  text(g, label, W / 2, 194, 20, good ? '#c8ffd8' : '#ffffff', 'center', 800);
+}
+
 function controlsStrip(g, W, H) {
   g.fillStyle = 'rgba(8,9,14,0.7)';
   g.fillRect(0, H - 22, W, 22);
@@ -456,6 +493,7 @@ export function drawFlightHud(g, frame) {
   } else {
     annunciators(g, W / 2, H - 360, session, read);
   }
+  dropCue(g, frame);
   banner(g, W, frame);
   if (frame.mapOpen) {
     g.fillStyle = 'rgba(5,6,10,0.55)';

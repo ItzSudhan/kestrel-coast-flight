@@ -124,7 +124,7 @@ function handleEvents(events) {
       audio.objective();
     } else if (e.type === 'stall') showBanner('STALL — NOSE DOWN, POWER UP', '#ff5a45', 1.5);
     else if (e.type === 'touchdown') {
-      showBanner(`TOUCHDOWN ${Math.round(e.vsFpm)} FPM`, e.vsFpm > -230 ? '#5dff8a' : '#ffc94a');
+      showBanner(`TOUCHDOWN ${Math.round(e.vsFpm)} FPM · HOLD B TO BRAKE`, e.vsFpm > -230 ? '#5dff8a' : '#ffc94a', 3);
       touchdownDust(world.fx, a.pos);
       audio.chirp();
     } else if (e.type === 'bounce') {
