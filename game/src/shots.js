@@ -68,7 +68,7 @@ export function stageShot(name, seed) {
     }
   });
   // A bolt forks down over the stretch of the front that is in frame as the picture is taken.
-  session.storm.bolt = { x: 3750, seed: 7 + seed, life: (SETTLE_STEPS + 30) * STEP };
+  session.storm.bolt = { x: 4500, seed: 7 + seed, life: (SETTLE_STEPS + 30) * STEP };
   session.storm.nextBolt = 60;
   return { screen: 'fly', session, view: 'chase', pilot, settle: SETTLE_STEPS };
 }
