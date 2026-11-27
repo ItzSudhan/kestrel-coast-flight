@@ -50,7 +50,7 @@ export function updateRingMarkers(view, session, time) {
     const next = i === session.nextRing;
     const soon = i === session.nextRing + 1;
     const pulse = 0.5 + 0.5 * Math.sin(time * 5);
-    m.holder.visible = !passed || i >= session.nextRing - 1;
+    m.holder.visible = !passed;
     m.core.material.color.set(passed ? '#7dffa8' : next ? '#ffc04d' : soon ? '#6fe7ff' : '#8fb9c9');
     m.core.material.opacity = passed ? 0.35 : next ? 1 : soon ? 0.85 : 0.5;
     m.halo.material.color.set(passed ? '#3cff7a' : next ? '#ff8a2a' : '#3fc8ff');
