@@ -2,7 +2,7 @@
 // Kestrel Field, flies the eight Beacon Rings and lands runway 09, then the checks below confirm
 // the flight model and the landing grader behave. Also flies a deliberate stall and a hard
 // landing to check the crash causes. Run: node tools/playtest.mjs
-import { STEP, KT, FT } from '../game/src/config.js';
+import { STEP, KT } from '../game/src/config.js';
 import { createSession, dropCrate, predictCrate, stepSession, toggleFlaps, toggleGear, readouts } from '../game/src/game-session.js';
 import { approach, flyRing, flyToward, takeoff, homeStrip } from '../game/src/autopilot.js';
 import { createAircraft, stallSpeed } from '../game/src/flight-physics.js';
@@ -135,6 +135,5 @@ check('greased grade', gradeLanding({ vsFpm: -120, centreline: 1.5, onRunway: tr
 check('bounced grade', gradeLanding({ vsFpm: -500, centreline: 1.5, onRunway: true, bounces: 1 }).grade === 'BOUNCED');
 check('off-field grade', gradeLanding({ vsFpm: -100, centreline: null, onRunway: false, bounces: 0 }).grade === 'OFF FIELD');
 
-void FT;
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);
 process.exit(failures === 0 ? 0 : 1);

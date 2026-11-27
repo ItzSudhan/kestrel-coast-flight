@@ -195,7 +195,7 @@ function project(x, y, z, W, H) {
   return { x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H, visible: inFront };
 }
 
-function drawOverlay(dt) {
+function drawOverlay() {
   const dpr = hudCanvas.width / Math.max(1, window.innerWidth);
   const s = Math.min(window.innerWidth / 1280, window.innerHeight / 800);
   const W = window.innerWidth / s;
@@ -232,7 +232,6 @@ function drawOverlay(dt) {
     text(g, 'PAUSED', W / 2, H / 2 - 20, 56, '#fff4e0', 'center', 900);
     text(g, 'P / ESC FLY ON · T RESTART THE SORTIE · BACKSPACE MISSION BOARD', W / 2, H / 2 + 30, 16, '#ffb347', 'center', 800);
   }
-  void dt;
 }
 
 function runGame() {
@@ -280,7 +279,7 @@ function runGame() {
     if (view === 'orbit' && game.screen === 'fly') placeOrbit(session.aircraft, world.rig.orbitAngle, 45, 16, new THREE.Vector3());
     audio.update(session.aircraft, session.mission.rain ? 0.8 : 0, game.screen === 'fly');
     world.frame(session, game.screen === 'fly' ? game.controls : {}, dt, game.time, view);
-    drawOverlay(dt);
+    drawOverlay();
   }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && game.screen === 'fly') game.screen = 'paused';
@@ -314,15 +313,14 @@ function runShot(name) {
     controls = scene.pilot();
     stepSession(scene.session, controls, STEP);
     time += STEP;
-    world.fx.puffs.forEach(() => {});
     world.frame(scene.session, controls, STEP, time, scene.view, i === 0);
   }
   game.time = time;
   game.controls = controls;
   let painted = 0;
   function paint() {
-    world.frame(scene.session, controls, painted === 0 ? 0.0001 : 0.0001, time, scene.view);
-    drawOverlay(0);
+    world.frame(scene.session, controls, 0.0001, time, scene.view);
+    drawOverlay();
     painted += 1;
     if (painted < 3) requestAnimationFrame(paint);
     else window.__shotReady = true;
