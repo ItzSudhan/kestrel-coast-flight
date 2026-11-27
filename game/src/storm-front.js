@@ -1,7 +1,7 @@
 // The storm rolling in off the sea from the north: how far out it is, how fast it closes, the
-// wind and gusts it pushes ahead of it, the turbulence near its edge and its lightning. Every
+// rain wall that marks it and its lightning (the wind it drives is in wind-and-gusts.js). Every
 // sortie runs against it; when it reaches the coast, the coast is closed.
-import { clamp, createRandom, fractalNoise } from './random.js';
+import { clamp, createRandom } from './random.js';
 
 /** The storm rolls in from bearing 020° (NNE) toward the islands; distances are measured from here. */
 export const STORM_BEARING = 20;
@@ -68,24 +68,11 @@ export function stormGrip(storm, x, z) {
   return clamp(1 - distanceToWall(storm, x, z) / 2600, 0, 1);
 }
 
-/** Wind (m/s vector) at a point and time: the wind off the storm plus gusts. */
-export function windAt(storm, x, y, z) {
-  const grip = stormGrip(storm, x, z);
-  const closeness = 1 - storm.km / Math.max(storm.startKm, 1);
-  const baseKt = storm.windKt + closeness * 5 + grip * 10;
-  const gust = (fractalNoise(storm.time * 0.35, x * 0.0004 + z * 0.0003, storm.seed, 3) - 0.5) * 2;
-  const speed = (baseKt + gust * (storm.gustKt + grip * 6)) / 1.943844;
-  const veer = (fractalNoise(storm.time * 0.11, 3.7, storm.seed + 5, 2) - 0.5) * 0.6;
-  const c = Math.cos(veer);
-  const s = Math.sin(veer);
-  const dx = -STORM_NORMAL.x;
-  const dz = -STORM_NORMAL.z;
-  return { x: (dx * c - dz * s) * speed, y: 0, z: (dx * s + dz * c) * speed, gustKt: gust * (storm.gustKt + grip * 6) };
-}
-
-/** Random-kick strength (m/s²) of turbulence at a point and height above ground. */
-export function turbulenceAt(storm, x, z, agl) {
-  const grip = stormGrip(storm, x, z);
-  const low = agl < 120 ? 0.6 : 0.3;
-  return (0.25 + grip * 2.4 + (storm.closed ? 2 : 0)) * low;
+/**
+ * Strike a bolt at a point (the scene draws it there) and light the sky. Used when lightning
+ * finds the aircraft.
+ */
+export function boltAt(storm, x, life = 0.5) {
+  storm.bolt = { x, seed: Math.floor(storm.random() * 100000), life };
+  storm.flash = 1;
 }

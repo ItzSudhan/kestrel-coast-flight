@@ -5,7 +5,9 @@
 // ?shot=cover|cockpit|board|result (&seed=N) stages that scene from a real seeded sortie
 // instead of running the game, paints it and sets window.__shotReady for a screenshot.
 import * as THREE from 'three';
-import { approachInfo, createSession, dropCrate, readouts, stepSession, toggleFlaps, toggleGear } from './game-session.js';
+import { answerCrisis, approachInfo, createSession, dropCrate, readouts, stepSession, toggleFlaps, toggleGear } from './game-session.js';
+import { CHOICE_DIVERT, CHOICE_PUSH } from './divert-decision.js';
+import { careerUpgrades, createCareer, recordSortie } from './pilot-career.js';
 import { createWorldScene } from './world-scene.js';
 import { shakeCamera } from './chase-camera.js';
 import { drawCockpitPanel } from './cockpit-panel.js';
@@ -19,7 +21,7 @@ import { paintMapImage } from './minimap.js';
 import { MISSIONS } from './missions.js';
 import { stageShot } from './shots.js';
 import { stormGrip } from './storm-front.js';
-import { BEST_KEY, STEP } from './config.js';
+import { BEST_KEY, CAREER_KEY, STEP } from './config.js';
 
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
@@ -44,6 +46,7 @@ const game = {
   time: 0,
   endTimer: 0,
   best: readBest(),
+  career: readCareer(),
   controls: { pitch: 0, roll: 0, yaw: 0, throttle: 0, brakes: false, refuel: false },
 };
 
@@ -58,9 +61,23 @@ function readBest() {
 function saveBest() {
   try {
     window.localStorage.setItem(BEST_KEY, JSON.stringify(game.best));
+    window.localStorage.setItem(CAREER_KEY, JSON.stringify(game.career));
   } catch {
-    // Storage may be off; best stars then last this visit only.
+    // Storage may be off; best stars and the career then last this visit only.
   }
+}
+
+function readCareer() {
+  try {
+    return createCareer(JSON.parse(window.localStorage.getItem(CAREER_KEY) ?? 'null'));
+  } catch {
+    return createCareer();
+  }
+}
+
+/** A sortie of mission `index`, with the career's upgrades fitted. */
+function newSession(index, sessionSeed) {
+  return createSession(MISSIONS[index].id, sessionSeed, { upgrades: careerUpgrades(game.career) });
 }
 
 function announce(message) {
@@ -80,7 +97,7 @@ resize();
 
 function showBoardSession(index) {
   game.selected = index;
-  game.session = createSession(MISSIONS[index].id, seed);
+  game.session = newSession(index, seed);
   poseForBoard(game.session);
   world.setSession(game.session);
   placeOrbit(game.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
@@ -100,7 +117,7 @@ function placeOrbit(aircraft, angle, radius, height, shift) {
 }
 
 function startSortie(index) {
-  game.session = createSession(MISSIONS[index].id, seed + index);
+  game.session = newSession(index, seed + index);
   world.setSession(game.session);
   clearWreck(world.fx);
   game.screen = 'fly';
@@ -112,6 +129,11 @@ function startSortie(index) {
 
 function showBanner(textValue, colour, seconds = 2) {
   game.banner = { text: textValue, colour, until: game.time + seconds };
+}
+
+/** A big moment: a huge two-line callout that holds the screen for a few seconds. */
+function showMoment(headline, sub, colour, seconds = 3.5) {
+  game.banner = { text: headline, sub, colour, big: true, until: game.time + seconds };
 }
 
 function handleEvents(events) {
@@ -145,7 +167,24 @@ function handleEvents(events) {
       showBanner(e.cause.toUpperCase(), '#ff5a45', 4);
       announce(`Crashed: ${e.cause}`);
     } else if (e.type === 'storm-closed') showBanner('THE STORM IS ON THE COAST', '#b48cff', 3);
-    else if (e.type === 'landed') announce(`Landed: ${e.grade}`);
+    else if (e.type === 'lightning-strike') {
+      shakeCamera(world.rig, 1);
+      audio.thunder();
+      showMoment(`LIGHTNING STRIKE · ENGINE ${e.engine}%`, 'POWER DOWN · ROUGH RUNNING · KEEP HER FLYING', '#c9a8ff', 4);
+      announce(`Lightning strike. Engine ${e.engine} percent.`);
+    } else if (e.type === 'crisis') {
+      showMoment('STORM CLOSING · YOUR CALL', '1 DIVERT · 2 PUSH THROUGH', '#ffcf5a', 3);
+      announce('The storm has cut the route. Press 1 to divert or 2 to push through.');
+    } else if (e.type === 'crisis-choice') {
+      const divert = e.choice === 1;
+      showBanner(divert ? `DIVERTING · ${game.session.crisis.options.divert.strip.name.toUpperCase()}` : `PUSHING THROUGH · +${game.session.crisis.options.push.bonus}`, divert ? '#9fe8ff' : '#c9a8ff', 2.6);
+    } else if (e.type === 'gust' && e.kt >= 18) showBanner(`GUST ${e.kt} KT`, '#9fe8ff', 1.4);
+    else if (e.type === 'gear-jammed') showMoment('GEAR JAMMED', 'NO WHEELS · BELLY LANDING ONLY', '#ff8a4a', 3.5);
+    else if (e.type === 'landed') {
+      announce(`Landed: ${e.grade}`);
+      const l = game.session.landing;
+      if (l && l.stars >= 2) showMoment(`${e.grade} · +${l.points}`, `${l.kt} KT · ${Math.abs(l.vsFpm)} FPM · ${l.centreline === null ? 'OFF THE PAVING' : `${Math.abs(l.centreline).toFixed(1)} M OFF CENTRE`}`, l.stars >= 3 ? '#5dff8a' : '#ffc94a', 3);
+    }
   }
   if (game.session.storm.flash > 0.99) audio.thunder();
   if (a.stallWarning) shakeCamera(world.rig, 0.18);
@@ -192,11 +231,14 @@ function handleActions(actions) {
       }
       continue;
     }
-    if (action === 'flaps') {
+    if ((action === 'pick1' || action === 'pick2') && game.session.crisis?.state === 'open') {
+      answerCrisis(game.session, action === 'pick1' ? CHOICE_DIVERT : CHOICE_PUSH);
+      audio.objective();
+    } else if (action === 'flaps') {
       toggleFlaps(game.session);
       audio.clunk();
     } else if (action === 'gear') {
-      toggleGear(game.session);
+      if (!toggleGear(game.session)) showBanner('GEAR JAMMED · BELLY ONLY', '#ff8a4a', 2);
       audio.clunk();
     } else if (action === 'camera') game.view = game.view === 'chase' ? 'cockpit' : 'chase';
     else if (action === 'map') game.mapOpen = !game.mapOpen;
@@ -292,8 +334,9 @@ function runGame() {
             const id = session.mission.id;
             session.result.newBest = session.result.stars > (game.best[id] ?? 0);
             game.best[id] = Math.max(game.best[id] ?? 0, session.result.stars);
-            saveBest();
           }
+          session.award = recordSortie(game.career, session);
+          saveBest();
           if (session.state === 'crashed') placeOrbit(session.aircraft, -0.8, 26, 7, new THREE.Vector3(6, 1, 6));
           else placeOrbit(session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
         }

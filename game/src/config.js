@@ -50,3 +50,6 @@ export const WORLD_SEED = 4127;
 
 /** localStorage key for best stars per mission. */
 export const BEST_KEY = 'kestrel-coast-best-v1';
+
+/** localStorage key for the pilot's career: points, rank, medals. */
+export const CAREER_KEY = 'kestrel-coast-career-v1';

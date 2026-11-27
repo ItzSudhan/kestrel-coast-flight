@@ -1,13 +1,21 @@
-// Small painted portraits for the radio panel, drawn with shapes: Maren Holt at Kestrel Radio
-// (headset, teal jacket), Tobin Ardle the Gannet Light keeper (white beard, oilskin, cap) and
-// you, the pilot (leather cap, goggles, scarf).
-import { SPEAKER_KEEPER, SPEAKER_PILOT } from './game-session.js';
+// The cast on the radio, with small painted portraits drawn from shapes: Maren Holt the Kestrel
+// Radio dispatcher (headset, teal jacket), Tobin Ardle the Gannet Light keeper (white beard,
+// oilskin, cap), Isla Brennan the Puffin Cay nurse (red hair, cardigan), Finn Ardle adrift in
+// the skiff (sou'wester, life vest) and you, the pilot (leather cap, goggles, scarf).
+import { SPEAKER_KEEPER, SPEAKER_NURSE, SPEAKER_PILOT, SPEAKER_SKIFF } from './game-session.js';
 
 export const SPEAKERS = {
-  radio: { name: 'MAREN HOLT', role: 'Kestrel Radio', colour: '#58c4c0' },
-  keeper: { name: 'TOBIN ARDLE', role: 'Gannet Light', colour: '#f2c23a' },
+  radio: { name: 'MAREN HOLT', role: 'Kestrel Radio dispatcher', colour: '#58c4c0' },
+  keeper: { name: 'TOBIN ARDLE', role: 'Gannet Light keeper', colour: '#f2c23a' },
+  nurse: { name: 'ISLA BRENNAN', role: 'Puffin Cay nurse', colour: '#ff8fb0' },
+  skiff: { name: 'FINN ARDLE', role: 'Adrift in the skiff', colour: '#ff6a5a' },
   pilot: { name: 'YOU', role: 'KC-9 Kestrel One', colour: '#ff9a52' },
 };
+
+/** The speaker for a radio line, falling back to Kestrel Radio. */
+export function speakerOf(who) {
+  return SPEAKERS[who] ?? SPEAKERS.radio;
+}
 
 function ellipse(g, x, y, rx, ry, colour) {
   g.fillStyle = colour;
@@ -24,12 +32,62 @@ export function drawPortrait(g, x, y, size, who) {
   g.roundRect(x, y, size, size, size * 0.14);
   g.clip();
   const bg = g.createLinearGradient(x, y, x, y + size);
-  bg.addColorStop(0, who === SPEAKER_KEEPER ? '#5b4a3a' : who === SPEAKER_PILOT ? '#4a3a52' : '#2f4b5e');
+  const tops = { [SPEAKER_KEEPER]: '#5b4a3a', [SPEAKER_PILOT]: '#4a3a52', [SPEAKER_NURSE]: '#5a3a4a', [SPEAKER_SKIFF]: '#2a3f5a' };
+  bg.addColorStop(0, tops[who] ?? '#2f4b5e');
   bg.addColorStop(1, '#14161d');
   g.fillStyle = bg;
   g.fillRect(x, y, size, size);
   const cx = x + 50 * s;
-  if (who === SPEAKER_KEEPER) {
+  if (who === SPEAKER_NURSE) {
+    // Isla Brennan: red hair up in a bun, navy cardigan over a white collar.
+    ellipse(g, cx, y + 106 * s, 46 * s, 34 * s, '#26304e');
+    g.fillStyle = '#f4f1ea';
+    g.beginPath();
+    g.moveTo(cx - 12 * s, y + 76 * s);
+    g.lineTo(cx, y + 90 * s);
+    g.lineTo(cx + 12 * s, y + 76 * s);
+    g.fill();
+    ellipse(g, cx, y + 24 * s, 13 * s, 11 * s, '#b4472a');
+    ellipse(g, cx, y + 46 * s, 25 * s, 22 * s, '#b4472a');
+    ellipse(g, cx, y + 54 * s, 20 * s, 23 * s, '#f0c7a8');
+    g.fillStyle = '#b4472a';
+    g.beginPath();
+    g.ellipse(cx - 6 * s, y + 38 * s, 18 * s, 8 * s, -0.3, 0, Math.PI * 2);
+    g.fill();
+    ellipse(g, cx - 8 * s, y + 52 * s, 2.5 * s, 2.5 * s, '#1b1b1b');
+    ellipse(g, cx + 8 * s, y + 52 * s, 2.5 * s, 2.5 * s, '#1b1b1b');
+    ellipse(g, cx - 13 * s, y + 60 * s, 4 * s, 2.5 * s, 'rgba(230,120,120,0.5)');
+    ellipse(g, cx + 13 * s, y + 60 * s, 4 * s, 2.5 * s, 'rgba(230,120,120,0.5)');
+    g.strokeStyle = '#9a4a42';
+    g.lineWidth = 2 * s;
+    g.beginPath();
+    g.arc(cx, y + 62 * s, 6 * s, 0.25, Math.PI - 0.25);
+    g.stroke();
+  } else if (who === SPEAKER_SKIFF) {
+    // Finn Ardle: yellow sou'wester, orange life vest, a worried look.
+    ellipse(g, cx, y + 106 * s, 46 * s, 34 * s, '#ff7a2a');
+    g.fillStyle = '#d9d4ca';
+    g.fillRect(cx - 4 * s, y + 78 * s, 8 * s, 30 * s);
+    ellipse(g, cx, y + 56 * s, 19 * s, 22 * s, '#e8b896');
+    g.fillStyle = '#f2c23a';
+    g.beginPath();
+    g.ellipse(cx, y + 40 * s, 34 * s, 9 * s, 0.12, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.arc(cx, y + 38 * s, 20 * s, Math.PI, 0);
+    g.fill();
+    g.strokeStyle = '#3a2a1e';
+    g.lineWidth = 2 * s;
+    g.beginPath();
+    g.moveTo(cx - 12 * s, y + 49 * s);
+    g.lineTo(cx - 4 * s, y + 51 * s);
+    g.moveTo(cx + 12 * s, y + 49 * s);
+    g.lineTo(cx + 4 * s, y + 51 * s);
+    g.stroke();
+    ellipse(g, cx - 8 * s, y + 55 * s, 2.4 * s, 2.4 * s, '#1b1b1b');
+    ellipse(g, cx + 8 * s, y + 55 * s, 2.4 * s, 2.4 * s, '#1b1b1b');
+    ellipse(g, cx, y + 68 * s, 4 * s, 3 * s, '#7a3e3a');
+  } else if (who === SPEAKER_KEEPER) {
     ellipse(g, cx, y + 106 * s, 46 * s, 34 * s, '#e0b52e');
     ellipse(g, cx, y + 52 * s, 22 * s, 25 * s, '#e2b08e');
     ellipse(g, cx, y + 66 * s, 21 * s, 16 * s, '#f1efe9');

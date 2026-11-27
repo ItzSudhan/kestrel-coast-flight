@@ -1,12 +1,19 @@
-// One sortie from start to stamp: the aircraft, the storm, the mission's objectives and rings,
-// the supply crate, refuelling on a strip, radio chatter and the end (landed, crashed or shut
-// out by the storm). Pure and stepped at a fixed rate, so the game, the screenshot scenes and
-// the Node playtest all fly the same sortie.
+// One sortie from start to stamp: the aircraft, the storm and its wind, the mission's objectives
+// and rings, the fuel plan, the divert-or-push crisis, the supply crate, refuelling on a strip,
+// radio chatter, the flight recorder and the end (landed, crashed or shut out by the storm).
+// Pure and stepped at a fixed rate, so the game, the screenshot scenes and the Node playtest
+// all fly the same sortie.
+import { planFuel } from './fuel-planner.js';
+import { gearWorks } from './damage-model.js';
+import { gustPeak, runwayWind, turbulenceAt, windAt } from './wind-and-gusts.js';
+import { chooseCrisis, createCrisis, stepCrisis } from './divert-decision.js';
+import { crashReport, createFlightRecorder, recordFlight } from './crash-report.js';
+import { fitUpgrades } from './pilot-career.js';
 import { cycleFlaps, createAircraft, stepAircraft } from './flight-physics.js';
 import { gradeLanding } from './landing-grader.js';
 import { missionById, scoreSortie } from './missions.js';
 import { RING_RADIUS, ringCrossing, ringNormals } from './rings-course.js';
-import { createStorm, stepStorm, turbulenceAt, windAt } from './storm-front.js';
+import { createStorm, stepStorm } from './storm-front.js';
 import { groundAt } from './terrain-height.js';
 import { AIRSTRIPS, landingEnd, runwayLocal, runwayThreshold } from './places.js';
 import { FT, KT } from './config.js';
@@ -15,16 +22,29 @@ import { createRandom } from './random.js';
 export const SPEAKER_RADIO = 'radio';
 export const SPEAKER_KEEPER = 'keeper';
 export const SPEAKER_PILOT = 'pilot';
+export const SPEAKER_NURSE = 'nurse';
+export const SPEAKER_SKIFF = 'skiff';
 
-/** A new sortie of the named mission. */
-export function createSession(missionId, seed = 1) {
+/**
+ * A new sortie of the named mission. `options.upgrades` are the career's unlocked upgrades,
+ * fitted to the aircraft at the start.
+ */
+export function createSession(missionId, seed = 1, options = {}) {
   const mission = missionById(missionId);
-  const aircraft = createAircraft(mission.start);
+  const aircraft = createAircraft(fitUpgrades(mission.start, options.upgrades ?? []));
   const rings = mission.rings ? mission.rings.map((ring) => ({ ...ring, passed: false })) : [];
   const session = {
     mission,
     seed,
     aircraft,
+    destination: mission.finish === 'land-puffin' ? 'puffin' : 'kestrel',
+    finish: mission.finish,
+    squall: false,
+    crisis: createCrisis(mission),
+    recorder: createFlightRecorder(),
+    gustMemory: {},
+    fuelPlan: null,
+    report: null,
     storm: createStorm({ ...mission.storm, seed }),
     random: createRandom(seed * 31 + 7),
     time: 0,
@@ -43,15 +63,19 @@ export function createSession(missionId, seed = 1) {
     kick: { x: 0, y: 0, z: 0 },
     lastWind: { x: 0, y: 0, z: 0, gustKt: 0 },
   };
-  say(session, SPEAKER_RADIO, openingLine(mission));
+  for (const [who, line] of mission.opening) say(session, who, line);
+  session.fuelPlan = planFuel(aircraft, destinationStrip(session), session.lastWind);
   return session;
 }
 
-function openingLine(mission) {
-  if (mission.id === 'rings') return 'Kestrel Radio: Rings are lit, storm is twelve out. Wheels up when ready.';
-  if (mission.id === 'mail') return 'Kestrel Radio: Mail’s aboard. Fuel is thin — cruise, don’t race.';
-  if (mission.id === 'rescue') return 'Gannet Light: Skiff adrift north-west of the Skerry. Look for red smoke.';
-  return 'Kestrel Radio: Front’s on us. Wind zero-two-zero at thirteen, gusting. Runway 09.';
+/** The strip the sortie is flying to now (it changes on a divert). */
+export function destinationStrip(session) {
+  return AIRSTRIPS.find((s) => s.id === session.destination) ?? AIRSTRIPS[0];
+}
+
+/** The pilot's answer to the crisis call: 1 divert, 2 push through. */
+export function answerCrisis(session, choice) {
+  return chooseCrisis(session, choice, (who, line) => say(session, who, line));
 }
 
 /** Add a radio line from a speaker. */
@@ -89,10 +113,17 @@ export function toggleFlaps(session) {
   cycleFlaps(session.aircraft);
 }
 
+/** Work the gear lever; a jammed gear (damage-model.js) will not move. Returns false when jammed. */
 export function toggleGear(session) {
   const a = session.aircraft;
-  if (a.onGround && a.gearDown) return;
+  if (a.onGround && a.gearDown) return true;
+  if (!gearWorks(a)) {
+    if (!session.jamWarned) say(session, SPEAKER_PILOT, 'Gear’s jammed! It’ll have to be the belly.');
+    session.jamWarned = true;
+    return false;
+  }
   a.gearDown = !a.gearDown;
+  return true;
 }
 
 /** Release the supply crate (rescue sortie). */
@@ -194,12 +225,13 @@ function finishLanding(session, strip) {
   });
   const headingDeg = touch ? touch.headingDeg : (a.heading * 180) / Math.PI;
   const runwayName = strip.ends[landingEnd(strip, headingDeg) ? 1 : 0];
-  session.landing = { ...graded, vsFpm: touch ? touch.vsFpm : 0, kt: touch ? touch.kt : 0, centreline: touch ? touch.centreline : null, strip, runwayName, bounces: a.bounces };
+  const threshold = runwayThreshold(strip, runwayName === strip.ends[1]);
+  const crossKt = touch?.wind ? Math.round(runwayWind(touch.wind, threshold.heading).crossKt) : 0;
+  session.landing = { ...graded, vsFpm: touch ? touch.vsFpm : 0, kt: touch ? touch.kt : 0, centreline: touch ? touch.centreline : null, strip, runwayName, bounces: a.bounces, crossKt };
   session.events.push({ type: 'landed', grade: graded.grade });
   const mission = session.mission;
-  if (strip.id === 'kestrel') complete(session, 'land-kestrel');
-  if (strip.id === 'puffin') complete(session, 'land-puffin');
-  const finished = session.objectives.find((o) => o.id === mission.finish)?.done;
+  complete(session, `land-${strip.id}`);
+  const finished = session.objectives.find((o) => o.id === session.finish)?.done;
   if (!finished) {
     say(session, SPEAKER_RADIO, `Kestrel Radio: That's ${strip.name}. Hold R to refuel, then press on.`);
     return;
@@ -212,6 +244,7 @@ function finishLanding(session, strip) {
   if (touch && touch.vsFpm > -300) complete(session, 'soft-touch');
   if (touch && touch.centreline !== null && Math.abs(touch.centreline) < 5) complete(session, 'centreline');
   if (Object.values(a.damage).every((v) => v > 0.8)) complete(session, 'no-damage');
+  if (session.squall && strip.id === session.destination) complete(session, 'squall');
   session.state = 'complete';
   session.result = { ...scoreSortie(session), cause: null };
   say(session, SPEAKER_RADIO, `Kestrel Radio: ${graded.grade === 'GREASED IT' ? 'Greased it! ' : ''}Welcome home. ${session.result.stars} stars.`);
@@ -235,8 +268,13 @@ export function stepSession(session, controls, dt) {
     session.events.push({ type: 'storm-closed' });
     if (!a.onGround) say(session, SPEAKER_RADIO, 'Kestrel Radio: The front is on the coast. Get down, anywhere!');
   }
-  const wind = windAt(storm, a.pos.x, a.pos.y, a.pos.z);
+  const wind = windAt(storm, a.pos.x, a.pos.y, a.pos.z, session.squall);
   session.lastWind = wind;
+  if (!a.onGround) {
+    const gust = gustPeak(session.gustMemory, wind, session.time);
+    if (gust) session.events.push(gust);
+  }
+  stepCrisis(session, (who, line) => say(session, who, line));
   const r = session.random;
   session.kick = { x: r() * 2 - 1, y: (r() * 2 - 1) * 0.7, z: r() * 2 - 1 };
   const from = { ...a.pos };
@@ -250,11 +288,13 @@ export function stepSession(session, controls, dt) {
   stepAircraft(
     a,
     { ...controls, throttle: session.refuelling ? 0 : controls.throttle },
-    { wind: a.onGround ? { x: wind.x * 0.3, y: 0, z: wind.z * 0.3 } : wind, turbulence: a.onGround ? 0 : turbulenceAt(storm, a.pos.x, a.pos.z, a.agl), kick: session.kick, groundAt },
+    { wind: a.onGround ? { x: wind.x * 0.3, y: 0, z: wind.z * 0.3 } : wind, turbulence: a.onGround ? 0 : turbulenceAt(storm, a.pos.x, a.pos.z, a.agl, session.squall), kick: session.kick, groundAt },
     dt,
   );
   for (const event of a.events) session.events.push(event);
   a.events.length = 0;
+  recordFlight(session.recorder, a, session.time);
+  if (!session.fuelPlan || Math.floor(session.time * 2) !== Math.floor((session.time - dt) * 2)) session.fuelPlan = planFuel(a, destinationStrip(session), wind);
 
   // Rings.
   if (session.nextRing < session.rings.length && !a.crashed) {
@@ -281,9 +321,11 @@ export function stepSession(session, controls, dt) {
     if (event.type === 'stall') say(session, SPEAKER_RADIO, 'Kestrel Radio: You’re stalling — nose down, power up!');
     if (event.type === 'engine-out') say(session, SPEAKER_PILOT, event.reason === 'fuel' ? 'Engine’s quit — tanks are dry!' : 'Engine’s gone. Gliding.');
     if (event.type === 'tree-strike') say(session, SPEAKER_PILOT, 'Clipped the treetops!');
+    if (event.type === 'lightning-strike') say(session, SPEAKER_PILOT, `We're hit! Lightning — engine's down to ${event.engine} percent.`);
+    if (event.type === 'gear-jammed') say(session, SPEAKER_PILOT, 'Gear’s taken a beating — it won’t lock. Belly landing.');
   }
-  if (session.mission.id === 'mail' && Math.hypot(a.pos.x - 5300, a.pos.z + 450) < 1800 && complete(session, 'reach-puffin')) {
-    say(session, SPEAKER_RADIO, 'Puffin Cay: We see you. Runway 36, wind light.');
+  if (session.destination === 'puffin' && Math.hypot(a.pos.x - 5300, a.pos.z + 450) < 1800 && complete(session, 'reach-puffin')) {
+    say(session, SPEAKER_NURSE, 'Puffin Cay: I can hear your engine! Runway 36, wind light. Mind the sheep.');
   }
   if (session.mission.boat && !session.boatFound) {
     const boat = session.mission.boat;
@@ -298,6 +340,8 @@ export function stepSession(session, controls, dt) {
   if (a.crashed) {
     session.state = 'crashed';
     session.result = { ...scoreSortie(session), cause: a.crashed.cause };
+    recordFlight(session.recorder, a, session.time, true);
+    session.report = crashReport(session, session.recorder);
     session.events.push({ type: 'sortie-over' });
     return session.events;
   }
@@ -326,6 +370,7 @@ export function stepSession(session, controls, dt) {
       session.events.push({ type: 'sortie-over' });
     }
   }
+  if (session.state === 'failed' && !session.report) session.report = crashReport(session, session.recorder);
   return session.events;
 }
 

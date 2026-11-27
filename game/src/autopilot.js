@@ -105,15 +105,30 @@ export function approach(a, strip, reversed) {
 export function createSortiePilot(session, act) {
   const home = AIRSTRIPS[0];
   const mail = session.mission.finish === 'land-puffin';
-  const strip = mail ? AIRSTRIPS[1] : home;
+  let strip = AIRSTRIPS.find((s) => s.id === session.destination) ?? home;
+  let reversed = false;
   let phase = session.aircraft.onGround ? 'takeoff' : session.rings.length ? 'rings' : 'land';
   let cleaned = !session.aircraft.onGround;
   let configured = false;
   let finalSet = false;
   return function controlsFor() {
     const a = session.aircraft;
+    // A divert re-plans the flight: head for the new strip and land on the end that faces us.
+    if (session.destination !== strip.id) {
+      strip = AIRSTRIPS.find((s) => s.id === session.destination) ?? home;
+      if (phase !== 'takeoff') phase = 'return';
+    }
+    if (phase === 'return') {
+      // Join the new strip's approach at a fix 1.8 km out, high enough to clear the hills.
+      const t = runwayThreshold(strip, reversed);
+      const fix = { x: t.x - t.ax * 1800, y: strip.elev + 175, z: t.z - t.az * 1800 };
+      if (Math.hypot(a.pos.x - fix.x, a.pos.z - fix.z) < 450) phase = 'land';
+      const c = flyToward(a, { ...fix, y: Math.max(fix.y, 230) }, 88);
+      c.throttle = Math.min(c.throttle, 0.6);
+      return c;
+    }
     if (phase === 'takeoff') {
-      if (!a.onGround && a.agl > 40) phase = mail ? 'cruise' : 'rings';
+      if (!a.onGround && a.agl > 40) phase = mail && strip.id !== home.id ? 'cruise' : 'rings';
       return takeoff(a, home, false);
     }
     if (phase === 'cruise') {
@@ -144,14 +159,14 @@ export function createSortiePilot(session, act) {
       }
       return flyRing(a, session.rings[i], session.normals[i], i >= 6 ? 80 : 95);
     }
-    const t = runwayThreshold(strip, false);
+    const t = runwayThreshold(strip, reversed);
     const distance = Math.hypot(a.pos.x - t.x, a.pos.z - t.z);
     if (!configured && distance < 3400) {
       configured = true;
       if (!a.gearDown) act('gear');
       while (a.flapDetent !== 2) act('flaps');
     }
-    return approach(a, strip, false);
+    return approach(a, strip, reversed);
   };
 }
 

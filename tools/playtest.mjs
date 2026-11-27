@@ -3,7 +3,14 @@
 // the flight model and the landing grader behave. Also flies a deliberate stall and a hard
 // landing to check the crash causes. Run: node tools/playtest.mjs
 import { STEP, KT } from '../game/src/config.js';
-import { createSession, dropCrate, predictCrate, stepSession, toggleFlaps, toggleGear, readouts } from '../game/src/game-session.js';
+import { answerCrisis, createSession, dropCrate, predictCrate, stepSession, toggleFlaps, toggleGear, readouts } from '../game/src/game-session.js';
+import { CHOICE_DIVERT, CHOICE_PUSH } from '../game/src/divert-decision.js';
+import { MIN_RESERVE, fuelPlanLine, legPlan, planFuel } from '../game/src/fuel-planner.js';
+import { GEAR_JAM_HEALTH, damageReport, handling, lightningStrike, worstDamage } from '../game/src/damage-model.js';
+import { crashReport } from '../game/src/crash-report.js';
+import { createCareer, fitUpgrades, rankOf, recordSortie } from '../game/src/pilot-career.js';
+import { runwayWind, windAt } from '../game/src/wind-and-gusts.js';
+import { AIRSTRIPS } from '../game/src/places.js';
 import { approach, createSortiePilot, flyRing, flyToward, takeoff, homeStrip } from '../game/src/autopilot.js';
 import { createAircraft, stallSpeed } from '../game/src/flight-physics.js';
 import { gradeLanding, judgeContact } from '../game/src/landing-grader.js';
@@ -59,6 +66,7 @@ for (let step = 0; step < 60 * 900 && session.state === 'flying'; step += 1) {
     controls = approach(a, strip, false);
   }
   maxAlt = Math.max(maxAlt, a.pos.y);
+  if (session.crisis?.state === 'open') answerCrisis(session, CHOICE_PUSH);
   const events = stepSession(session, controls, STEP);
   for (const e of events) {
     if (['ring', 'liftoff', 'touchdown', 'bounce', 'stall', 'crash', 'landed', 'objective', 'stopped', 'tree-strike', 'damage'].includes(e.type)) {
@@ -78,6 +86,67 @@ check('course time is a few minutes', session.time > 150 && session.time < 600, 
 check('stayed clear of the ground', minAgl > 20, `min ${minAgl.toFixed(0)} m AGL`);
 check('storm closed in but not on the coast', session.storm.km < 12 && session.storm.km > 0, `${session.storm.km.toFixed(1)} km`);
 check('scored and starred', session.result && session.result.total > 0 && session.result.stars >= 2, session.result ? `${session.result.total} pts, ${session.result.stars} stars` : '');
+check('the storm crisis came up mid-course', session.crisis?.choice === CHOICE_PUSH, `${session.crisis?.state}`);
+check('pushing through the squall brought a lightning strike', session.crisis?.struck && a.damage.engine < 0.9, `engine ${Math.round(a.damage.engine * 100)}%`);
+check('landing home after pushing through earns the squall bonus', session.objectives.find((o) => o.id === 'squall')?.done === true);
+
+// 4c. The fuel planner: distance, wind and burn make the plan, and a headwind costs fuel.
+const kestrel = AIRSTRIPS[0];
+const puffin = AIRSTRIPS[1];
+const calm = legPlan(kestrel, puffin, { x: 0, z: 0 });
+const intoWind = legPlan(kestrel, puffin, { x: -8, z: 0 });
+check('the planner times the 7 km leg to Puffin Cay at cruise', calm.seconds > 150 && calm.seconds < 260, `${calm.seconds.toFixed(0)} s, ${calm.fuel.toFixed(1)}%`);
+check('a headwind on the leg costs fuel', intoWind.fuel > calm.fuel * 1.1, `${calm.fuel.toFixed(1)}% calm, ${intoWind.fuel.toFixed(1)}% into 16 kt`);
+const planner = createSession('mail', 1);
+const plan = planFuel(planner.aircraft, puffin, { x: 0, z: 0 });
+check('the mail run plan leaves the reserve with its 44%', plan.status === 'ok' && plan.reserve >= MIN_RESERVE, fuelPlanLine(plan));
+check('the plan line reads FUEL TO · RESERVE · BINGO', /^FUEL TO PUFFIN CAY \d+% · RESERVE \d+% · BINGO IN \d+:\d\d$/.test(fuelPlanLine(plan)), fuelPlanLine(plan));
+planner.aircraft.fuel = 6;
+check('a near-dry tank plans short', planFuel(planner.aircraft, puffin, { x: 0, z: 0 }).status === 'short', fuelPlanLine(planFuel(planner.aircraft, puffin, { x: 0, z: 0 })));
+
+// 4d. The divert decision: on the mail run, divert back to Kestrel and land there.
+const divertRun = createSession('mail', 2);
+const divertPilot = createSortiePilot(divertRun, (name) => (name === 'gear' ? toggleGear(divertRun) : toggleFlaps(divertRun)));
+let divertOptions = null;
+for (let step = 0; step < 60 * 600 && divertRun.state === 'flying'; step += 1) {
+  if (divertRun.crisis.state === 'open') {
+    divertOptions = divertRun.crisis.options;
+    answerCrisis(divertRun, CHOICE_DIVERT);
+  }
+  stepSession(divertRun, divertPilot(), STEP);
+}
+check('the crisis call offers a divert with a fuel check and a push with its gusts', divertOptions && divertOptions.divert.strip.id === 'kestrel' && divertOptions.push.gustKt > 10, divertOptions ? `divert ${divertOptions.divert.km} km ${divertOptions.divert.plan.status}, push gusts ${divertOptions.push.gustKt} kt` : 'no call');
+check('the diverted mail run lands at Kestrel instead', divertRun.state === 'complete' && divertRun.landing?.strip.id === 'kestrel', `${divertRun.state}, ${divertRun.landing?.strip.name}${divertRun.result?.cause ? ': ' + divertRun.result.cause : ''}`);
+check('the divert rewrote the landing objective', divertRun.objectives.some((o) => o.id === 'land-kestrel' && o.text.startsWith('Divert')));
+
+// 4e. The damage model: a torn wing rolls her, a jammed gear means a belly landing, lightning costs power.
+function bankAfter(wings, side) {
+  const s = createSession('storm', 3);
+  s.aircraft.damage.wings = wings;
+  s.aircraft.wingSide = side;
+  for (let i = 0; i < 60 * 3; i += 1) stepSession(s, { pitch: 0, roll: 0, yaw: 0, throttle: 0.6 }, STEP);
+  return (s.aircraft.bank * 180) / Math.PI;
+}
+const soundBank = bankAfter(1, 1);
+const tornRight = bankAfter(0.5, 1);
+const tornLeft = bankAfter(0.5, -1);
+check('a torn wing rolls her toward it, hands off', Math.abs(tornRight - soundBank) > 4 && Math.sign(tornRight - soundBank) === -Math.sign(tornLeft - soundBank), `sound ${soundBank.toFixed(1)}°, right ${tornRight.toFixed(1)}°, left ${tornLeft.toFixed(1)}°`);
+const jam = createSession('storm', 3);
+jam.aircraft.damage.gear = GEAR_JAM_HEALTH - 0.05;
+check('a jammed gear will not come down', toggleGear(jam) === false && !jam.aircraft.gearDown && handling(jam.aircraft).gearJammed);
+check('the damage report names the jam', damageReport(jam.aircraft).find((l) => l.part === 'gear').effect === 'JAMMED · BELLY ONLY');
+const jamPilot = createSortiePilot(jam, (name) => (name === 'gear' ? toggleGear(jam) : toggleFlaps(jam)));
+for (let step = 0; step < 60 * 300 && jam.state === 'flying'; step += 1) stepSession(jam, jamPilot(), STEP);
+check('with the gear jammed the landing is on her belly', jam.aircraft.belly && (jam.landing?.grade === 'BELLY LANDING' || jam.state !== 'complete'), `${jam.state}, ${jam.landing?.grade ?? jam.result?.cause}`);
+const struck = createSession('storm', 3);
+const thrustBefore = handling(struck.aircraft).thrustFactor;
+lightningStrike(struck.aircraft);
+check('a lightning strike costs engine power', handling(struck.aircraft).thrustFactor < thrustBefore - 0.1 && struck.aircraft.events.some((e) => e.type === 'lightning-strike'), worstDamage(struck.aircraft)?.text);
+
+// 4f. Crosswind on final for the storm landing reads against runway 09.
+const stormWind = createSession('storm', 1);
+const cross = runwayWind(windAt(stormWind.storm, kestrel.x, 30, kestrel.z), 90);
+check('the storm landing has a real crosswind on 09', cross.crossKt > 6, `${cross.crossKt.toFixed(0)} kt from the ${cross.side.toLowerCase()}`);
 
 // 3. A deliberate stall: pull and cut power until the wing lets go.
 const stallTest = createSession('storm', 2);
@@ -92,6 +161,10 @@ for (let step = 0; step < 60 * 40 && stallTest.state === 'flying'; step += 1) {
   }
 }
 check('holding full back stick with no power stalls', stalled, `${stallKt.toFixed(0)} kt`);
+for (let step = 0; step < 60 * 60 && stallTest.state === 'flying'; step += 1) stepSession(stallTest, { pitch: 1, roll: 0.3, yaw: 0, throttle: 0 }, STEP);
+const report = stallTest.report ?? crashReport(stallTest, stallTest.recorder);
+check('the crash report keeps the last 10 s of path', report.path.length >= 30 && report.path[0].t >= -10.5, `${report.path.length} samples`);
+check('the crash report gives a cause, a summary and a lesson', Boolean(report.cause && /KT/.test(report.summary) && report.lesson), `${report.cause} · ${report.summary}`);
 
 // 3b. A novice takeoff: full power, then hauling full back stick from 50 kt for six seconds.
 const novice = createSession('rings', 5);
@@ -152,6 +225,14 @@ check('water is a ditching', wet.kind === 'crash' && wet.cause.startsWith('Ditch
 check('greased grade', gradeLanding({ vsFpm: -120, centreline: 1.5, onRunway: true, bounces: 0 }).grade === 'GREASED IT');
 check('bounced grade', gradeLanding({ vsFpm: -500, centreline: 1.5, onRunway: true, bounces: 1 }).grade === 'BOUNCED');
 check('off-field grade', gradeLanding({ vsFpm: -100, centreline: null, onRunway: false, bounces: 0 }).grade === 'OFF FIELD');
+
+// 7. The career: the finished ring course banks points and medals; ranks unlock upgrades.
+const career = createCareer();
+const award = recordSortie(career, session);
+check('a finished sortie banks its points and medals', award.points === session.result.total && career.points === award.points && award.medals.includes('storm-runner'), `${award.points} pts, ${award.medals.join(', ')}`);
+check('ranks climb with points', rankOf(0).name === 'CADET' && rankOf(2500).name === 'ISLAND CAPTAIN' && rankOf(99999).name === 'STORM WARDEN');
+const fitted = fitUpgrades({ fuel: 44 }, [{ id: 'long-tank' }, { id: 'stout-gear' }]);
+check('upgrades fit to the aircraft', fitted.fuel === 56 && fitted.armour.gear === 0.5);
 
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);
 process.exit(failures === 0 ? 0 : 1);

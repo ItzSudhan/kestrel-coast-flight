@@ -17,8 +17,8 @@ export const ISLANDS = [
  * for both ends (09 lands heading 090, 27 lands heading 270).
  */
 export const AIRSTRIPS = [
-  { id: 'kestrel', name: 'Kestrel Field', x: -1650, z: 800, heading: 90, length: 1000, width: 36, elev: 14, ends: ['09', '27'] },
-  { id: 'puffin', name: 'Puffin Cay Strip', x: 5300, z: -450, heading: 0, length: 800, width: 26, elev: 12, ends: ['36', '18'] },
+  { id: 'kestrel', name: 'Kestrel Field', short: 'KESTREL', x: -1650, z: 800, heading: 90, length: 1000, width: 36, elev: 14, ends: ['09', '27'] },
+  { id: 'puffin', name: 'Puffin Cay Strip', short: 'PUFFIN CAY', x: 5300, z: -450, heading: 0, length: 800, width: 26, elev: 12, ends: ['36', '18'] },
 ];
 
 /** The harbour town of Kestrel Harbour, south of Kestrel Field. */

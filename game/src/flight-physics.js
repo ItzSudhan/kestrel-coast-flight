@@ -2,7 +2,8 @@
 // and angle of attack until the wing stalls, drag from lift, flaps and gear, gravity, wind and
 // ground effect. Rates answer the stick at every speed (authority shrinks but never vanishes),
 // the nose weathervanes into the airflow, and the wheels roll, steer, brake and bounce.
-// Damage to engine, wings, gear and tail changes how she flies. Pure: runs in Node.
+// Damage to engine, wings, gear and tail (damage-model.js) changes how she flies. Pure: runs in Node.
+import { createDamage, gearWorks, handling, hurt } from './damage-model.js';
 import { judgeContact } from './landing-grader.js';
 import { attitudeOf, dot, length, normalized, quatAxisAngle, quatFromAttitude, quatMultiply, quatNormalize, scaled, vec } from './flight-math.js';
 import { AIRFRAME, FPM, FT, GRAVITY, KT, RHO } from './config.js';
@@ -28,7 +29,10 @@ export function createAircraft(start) {
     gearDown: start.gearDown ?? true,
     gearPos: (start.gearDown ?? true) ? 1 : 0,
     fuel: start.fuel ?? 100,
-    damage: { engine: 1, wings: 1, gear: 1, tail: 1, ...(start.damage ?? {}) },
+    damage: createDamage(start.damage),
+    wingSide: 1,
+    armour: start.armour ?? null,
+    tune: start.tune ?? 1,
     onGround: Boolean(start.onGround),
     brakes: false,
     stalled: false,
@@ -82,13 +86,6 @@ function emit(aircraft, type, detail = {}) {
   aircraft.events.push({ type, ...detail });
 }
 
-function hurt(aircraft, part, amount) {
-  if (amount <= 0) return;
-  const before = aircraft.damage[part];
-  aircraft.damage[part] = Math.max(0, before - amount);
-  if (before - aircraft.damage[part] > 0.015) emit(aircraft, 'damage', { part, amount });
-}
-
 function crash(aircraft, cause) {
   aircraft.crashed = { cause, kt: Math.round(aircraft.ias * KT), ft: Math.round(Math.max(0, aircraft.agl) * FT), at: { ...aircraft.pos } };
   emit(aircraft, 'crash', { cause });
@@ -118,15 +115,14 @@ function updateSystems(aircraft, controls, dt) {
     const burn = AIRFRAME.fuelIdleBurn + AIRFRAME.fuelFullBurn * aircraft.throttle * aircraft.throttle;
     aircraft.fuel = Math.max(0, aircraft.fuel - burn * dt * (controls.fuelScale ?? 1));
   }
-  const rpmGoal = aircraft.engineRunning ? 750 + 1950 * aircraft.throttle * (0.55 + 0.45 * aircraft.damage.engine) + aircraft.ias * 6 : aircraft.ias * 14;
+  const rpmGoal = aircraft.engineRunning ? 750 + 1950 * aircraft.throttle * handling(aircraft).rpmFactor + aircraft.ias * 6 : aircraft.ias * 14;
   aircraft.rpm += (rpmGoal - aircraft.rpm) * Math.min(1, dt * 2.5);
   aircraft.brakes = Boolean(controls.brakes);
 }
 
 function thrustNewtons(aircraft) {
   if (!aircraft.engineRunning) return 0;
-  const health = 0.4 + 0.6 * aircraft.damage.engine;
-  return aircraft.throttle * AIRFRAME.thrustMax * health * Math.max(0.22, 1 - aircraft.ias / AIRFRAME.propSpeedLimit);
+  return aircraft.throttle * AIRFRAME.thrustMax * handling(aircraft).thrustFactor * Math.max(0.22, 1 - aircraft.ias / AIRFRAME.propSpeedLimit);
 }
 
 /**
@@ -162,11 +158,12 @@ export function stepAircraft(aircraft, controls, env, dt) {
   const dynamic = 0.5 * RHO * speed * speed;
   const flaps = aircraft.flaps;
   const wings = aircraft.damage.wings;
+  const harm = handling(aircraft);
   const stallAoa = lerp(AIRFRAME.stallAoa, AIRFRAME.flapStallAoa, flaps);
   const groundEffect = aircraft.agl < 9 ? 1 + 0.12 * (1 - Math.max(0, aircraft.agl) / 9) : 1;
   const cl = liftCoefficient(aoa, flaps);
-  const lift = dynamic * AIRFRAME.wingArea * cl * (0.7 + 0.3 * wings) * groundEffect;
-  const cd = AIRFRAME.dragZero + (AIRFRAME.dragInduced * cl * cl) / groundEffect + AIRFRAME.dragFlaps * flaps + AIRFRAME.dragGear * aircraft.gearPos + (1 - wings) * 0.025;
+  const lift = dynamic * AIRFRAME.wingArea * cl * harm.liftFactor * groundEffect;
+  const cd = AIRFRAME.dragZero + (AIRFRAME.dragInduced * cl * cl) / groundEffect + AIRFRAME.dragFlaps * flaps + AIRFRAME.dragGear * aircraft.gearPos + harm.wingDrag;
   const drag = dynamic * AIRFRAME.wingArea * cd;
   const upDot = dot(u, airDir);
   const liftDir = speed > 2 ? normalized({ x: u.x - airDir.x * upDot, y: u.y - airDir.y * upDot, z: u.z - airDir.z * upDot }) : u;
@@ -220,7 +217,8 @@ function stepInAir(aircraft, controls, acc, att, speed, stallAoa, dt) {
 
   const authority = clamp(0.38 + 0.62 * (speed / 36) ** 2, 0.38, 1.25);
   const stability = clamp(speed / 30, 0.12, 1.45);
-  const tail = 0.5 + 0.5 * aircraft.damage.tail;
+  const harm = handling(aircraft);
+  const tail = harm.tailFactor;
   const wings = aircraft.damage.wings;
   const flight = Math.asin(clamp(aircraft.vel.y / Math.max(1, length(aircraft.vel)), -1, 1));
   const bankFactor = Math.max(Math.cos(att.bank), 0.5);
@@ -235,10 +233,11 @@ function stepInAir(aircraft, controls, acc, att, speed, stallAoa, dt) {
   const aoaGoal = trimAoa + pull * (pull > 0 ? pullRange : 0.24);
 
   let pitchRate = (aoaGoal - aircraft.aoa) * 2.8 * stability * tail + pull * 0.22 * authority * tail;
-  let rollRate = (controls.roll ?? 0) * 2.1 * authority * (0.65 + 0.35 * wings);
+  let rollRate = (controls.roll ?? 0) * 2.1 * authority * harm.rollAuthority;
   let yawRate = aircraft.beta * 2.4 * stability + (controls.yaw ?? 0) * 0.65 * authority * tail;
   if (Math.abs(controls.roll ?? 0) < 0.05) rollRate -= att.bank * 0.22 * stability;
-  rollRate += (1 - wings) * 0.22;
+  // A damaged wing lifts less than the sound one: she rolls toward it unless held.
+  rollRate += harm.rollPull;
   if (aircraft.stalled) {
     const depth = clamp((aircraft.aoa - stallAoa) / 0.08, 0.25, 1);
     pitchRate -= 0.55 * depth + 0.15;
@@ -269,7 +268,7 @@ function stepOnGround(aircraft, controls, acc, ground, gearHeight, att, dt) {
   const surface = ground.surface;
   const idle = aircraft.throttle < 0.12 ? 0.6 : 0;
   const rolling = (surface === 'runway' ? 0.35 : surface === 'sand' ? 2.4 : 1.1) + idle;
-  const braking = aircraft.brakes ? (surface === 'runway' ? 4.2 : 2.4) * (0.4 + 0.6 * aircraft.damage.gear) : 0;
+  const braking = aircraft.brakes ? (surface === 'runway' ? 4.2 : 2.4) * handling(aircraft).brakeFactor : 0;
   const friction = (rolling + braking) * dt;
   along = Math.abs(along) <= friction ? 0 : along - Math.sign(along) * friction;
   const gs = Math.abs(along);
@@ -318,7 +317,8 @@ function checkContact(aircraft, env, gearHeight) {
   const bottom = aircraft.pos.y - gearHeight;
   if (ground.surface === 'forest' && bottom - ground.height < TREE_HEIGHT && bottom > ground.height && aircraft.treeCooldown === 0) {
     aircraft.treeCooldown = 0.8;
-    hurt(aircraft, 'wings', 0.3);
+    // The low wing in a bank (or the right one, level) takes the branches.
+    hurt(aircraft, 'wings', 0.3, aircraft.bank < -0.05 ? -1 : 1);
     hurt(aircraft, 'gear', 0.15);
     aircraft.vel = scaled(aircraft.vel, 0.82);
     emit(aircraft, 'tree-strike');
@@ -336,7 +336,7 @@ function checkContact(aircraft, env, gearHeight) {
     pitchDeg: (att.pitch * 180) / Math.PI,
     surface: ground.surface,
     slope: ground.slope,
-    gearDown: aircraft.gearPos > 0.85,
+    gearDown: aircraft.gearPos > 0.85 && gearWorks(aircraft),
     gearHealth: aircraft.damage.gear,
     stall: aircraft.stalled || aircraft.lastStall ? aircraft.lastStall : null,
   };
@@ -357,6 +357,7 @@ function checkContact(aircraft, env, gearHeight) {
       runway: ground.runway ? ground.runway.strip : null,
       headingDeg: (att.heading * 180) / Math.PI,
       at: { x: aircraft.pos.x, z: aircraft.pos.z },
+      wind: env.wind ? { x: env.wind.x, y: 0, z: env.wind.z, gustKt: env.wind.gustKt ?? 0 } : null,
       time: aircraft.time,
     };
   }
