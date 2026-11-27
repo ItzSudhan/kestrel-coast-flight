@@ -1,61 +1,52 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
+// Shared numbers for Kestrel Coast: the fixed step, unit conversions, the aircraft's airframe
+// figures and the world's fixed seed. Nothing here touches the browser, so the Node playtest
+// reads the same numbers the game flies by.
 
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
-
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
+/** The simulation's fixed step, in seconds. */
 export const STEP = 1 / 60;
 
-export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+/** Metres per second to knots, metres to feet, metres per second to feet per minute. */
+export const KT = 1.943844;
+export const FT = 3.28084;
+export const FPM = 196.8504;
+
+/** Air density at sea level (kg/m³) and gravity (m/s²). */
+export const RHO = 1.225;
+export const GRAVITY = 9.81;
+
+/**
+ * The KC-9 "Kestrel", a high-wing bush plane: mass, wing, lift and drag curve, engine and limits.
+ * Stall speed falls out of these: clean about 49 kt, full flaps about 42 kt.
+ */
+export const AIRFRAME = {
+  mass: 1050,
+  wingArea: 16.2,
+  liftSlope: 5.0,
+  liftZero: 0.3,
+  stallAoa: 0.26,
+  flapLift: 0.48,
+  flapStallAoa: 0.24,
+  dragZero: 0.03,
+  dragInduced: 0.05,
+  dragFlaps: 0.035,
+  dragGear: 0.012,
+  thrustMax: 4100,
+  propSpeedLimit: 95,
+  gearHeight: 1.55,
+  bellyHeight: 0.72,
+  rotateSpeed: 23,
+  overspeedKt: 150,
+  flapLimitKt: 100,
+  gearLimitKt: 135,
+  fuelIdleBurn: 0.05,
+  fuelFullBurn: 0.26,
 };
 
-export const LIVES = 3;
+/** Storm front: kilometres to the coast at which it counts as closed in. */
+export const STORM_CLOSED_KM = 0;
 
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
-};
+/** The world's layout seed: the island chain is designed, its noise detail comes from this. */
+export const WORLD_SEED = 4127;
 
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
-};
-
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
-
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
-
-export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
-};
-
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
+/** localStorage key for best stars per mission. */
+export const BEST_KEY = 'kestrel-coast-best-v1';

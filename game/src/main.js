@@ -1,133 +1,317 @@
-// Boot and the one loop: input is read every frame, the world advances in fixed 1/60 s steps
-// (several in a slow frame, none in a fast one), and the renderer paints what is there. The game
-// moves between four screens: title, play, paused and game over.
+// Kestrel Coast: boot and the one loop. Input is read every frame, the sortie advances in fixed
+// 1/60 s steps, events become banners, sounds and wreckage, the 3D coast is drawn, and the HUD
+// (mission board, flight HUD or cockpit panel, result card) is painted over it.
 //
-// ?seed=N fixes the falling pattern. ?shot=start|play|end (with &seed=N) stages that scene
-// instead of running the loop, paints it twice and sets window.__shotReady for a screenshot.
-import { BEST_KEY, LIVES, STEP } from './config.js';
-import { createRandom } from './random.js';
-import { createWorld, EVENT_HIT, EVENT_OVER } from './world.js';
-import { ACTION_CONFIRM, ACTION_PAUSE, createInput } from './input.js';
-import { createRenderer, SCREEN_OVER, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
+// ?shot=cover|cockpit|board|result (&seed=N) stages that scene from a real seeded sortie
+// instead of running the game, paints it and sets window.__shotReady for a screenshot.
+import * as THREE from 'three';
+import { BEST_KEY, STEP } from './config.js';
+import { drawCockpitPanel } from './cockpit-panel.js';
+import { clearWreck, startWreck, touchdownDust } from './effects.js';
+import { createEngineAudio } from './engine-audio.js';
+import { approachInfo, createSession, dropCrate, readouts, stepSession, toggleFlaps, toggleGear } from './game-session.js';
+import { drawFlightHud, text } from './hud.js';
+import { createInput } from './input.js';
+import { paintMapImage } from './minimap.js';
+import { drawMissionBoard, poseForBoard } from './mission-board.js';
+import { MISSIONS } from './missions.js';
+import { drawResultCard } from './result-card.js';
 import { stageShot } from './shots.js';
-
-/** The longest frame the loop catches up on; a longer stall (a hidden tab) is dropped, not replayed. */
-const MAX_FRAME = 0.25;
+import { createWorldScene } from './world-scene.js';
 
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
 const seedParam = Number.parseInt(params.get('seed') ?? '', 10);
-const seed = Number.isInteger(seedParam) ? seedParam : Math.floor(Math.random() * 4294967296);
+const seed = Number.isInteger(seedParam) ? seedParam : Math.floor(Math.random() * 100000);
 
-const canvas = document.getElementById('game');
+const canvas = document.getElementById('world');
+const hudCanvas = document.getElementById('hud');
 const status = document.getElementById('status');
-const world = createWorld(createRandom(seed));
-const renderer = createRenderer(canvas);
+const g = hudCanvas.getContext('2d');
+const world = createWorldScene(canvas);
+const mapImage = paintMapImage(world.grid);
+const audio = createEngineAudio();
+
+const game = {
+  screen: 'board',
+  selected: 0,
+  session: createSession('rings', seed),
+  view: 'chase',
+  mapOpen: false,
+  banner: null,
+  time: 0,
+  endTimer: 0,
+  best: readBest(),
+  controls: { pitch: 0, roll: 0, yaw: 0, throttle: 0, brakes: false, refuel: false },
+};
 
 function readBest() {
   try {
-    return Number.parseInt(window.localStorage.getItem(BEST_KEY) ?? '0', 10) || 0;
+    return JSON.parse(window.localStorage.getItem(BEST_KEY) ?? '{}') || {};
   } catch {
-    return 0;
+    return {};
   }
 }
 
-function saveBest(value) {
+function saveBest() {
   try {
-    window.localStorage.setItem(BEST_KEY, String(value));
+    window.localStorage.setItem(BEST_KEY, JSON.stringify(game.best));
   } catch {
-    // Storage can be off (private windows): the best score then lasts this visit only.
+    // Storage may be off; best stars then last this visit only.
   }
 }
 
-function runShot(name) {
-  const scene = stageShot(name, world);
-  let painted = 0;
-  function paint() {
-    renderer.draw(world.state, scene.screen, scene.best);
-    painted += 1;
-    if (painted < 2) requestAnimationFrame(paint);
-    else window.__shotReady = true;
+function announce(message) {
+  status.textContent = message;
+}
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  world.resize(w, h);
+  hudCanvas.width = Math.round(w * dpr);
+  hudCanvas.height = Math.round(h * dpr);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function showBoardSession(index) {
+  game.selected = index;
+  game.session = createSession(MISSIONS[index].id, seed);
+  poseForBoard(game.session);
+  world.setSession(game.session);
+  placeOrbit(game.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
+}
+
+const BOARD_ORBIT = { angle: -1.05, radius: 15, height: 1.6, shift: new THREE.Vector3(0, -2.4, 0) };
+
+function placeOrbit(aircraft, angle, radius, height, shift) {
+  const rig = world.rig;
+  rig.orbitCentre.set(aircraft.pos.x, aircraft.pos.y, aircraft.pos.z);
+  rig.orbitAngle = angle;
+  rig.orbitRadius = radius;
+  rig.orbitHeight = height;
+  rig.orbitShift = shift;
+}
+
+function startSortie(index) {
+  game.session = createSession(MISSIONS[index].id, seed + index);
+  world.setSession(game.session);
+  clearWreck(world.fx);
+  game.screen = 'fly';
+  game.endTimer = 0;
+  game.banner = { text: MISSIONS[index].title.toUpperCase(), colour: '#ffb347', until: game.time + 2.5 };
+  game.input.setThrottle(game.session.aircraft.throttle);
+  announce(`Sortie ${MISSIONS[index].number}: ${MISSIONS[index].title}. ${MISSIONS[index].blurb}`);
+}
+
+function showBanner(textValue, colour, seconds = 2) {
+  game.banner = { text: textValue, colour, until: game.time + seconds };
+}
+
+function handleEvents(events) {
+  const a = game.session.aircraft;
+  for (const e of events) {
+    if (e.type === 'ring') {
+      showBanner(`RING ${e.index} / ${game.session.rings.length}`, '#ffb347');
+      audio.ring();
+    } else if (e.type === 'objective') {
+      const o = game.session.objectives.find((x) => x.id === e.id);
+      if (o) showBanner(`✓ ${o.text.toUpperCase()}  +${o.reward}`, '#5dff8a', 2.4);
+      audio.objective();
+    } else if (e.type === 'stall') showBanner('STALL — NOSE DOWN, POWER UP', '#ff5a45', 1.5);
+    else if (e.type === 'touchdown') {
+      showBanner(`TOUCHDOWN ${Math.round(e.vsFpm)} FPM`, e.vsFpm > -230 ? '#5dff8a' : '#ffc94a');
+      touchdownDust(world.fx, a.pos);
+      audio.chirp();
+    } else if (e.type === 'bounce') {
+      showBanner('BOUNCED!', '#ffc94a');
+      audio.chirp();
+    } else if (e.type === 'tree-strike') showBanner(`TREE STRIKE · WINGS ${Math.round(a.damage.wings * 100)}%`, '#ff8a4a');
+    else if (e.type === 'engine-out') showBanner('ENGINE OUT — GLIDE', '#ff5a45', 3);
+    else if (e.type === 'crash') {
+      startWreck(world.fx, a);
+      audio.crash();
+      showBanner(e.cause.toUpperCase(), '#ff5a45', 4);
+      announce(`Crashed: ${e.cause}`);
+    } else if (e.type === 'storm-closed') showBanner('THE STORM IS ON THE COAST', '#b48cff', 3);
+    else if (e.type === 'landed') announce(`Landed: ${e.grade}`);
   }
-  requestAnimationFrame(paint);
+  if (game.session.storm.flash > 0.99) audio.thunder();
+}
+
+function handleActions(actions) {
+  for (const action of actions) {
+    audio.start();
+    if (action === 'audio') audio.toggleMute();
+    if (game.screen === 'board') {
+      if (action.startsWith('pick')) showBoardSession(Number(action.slice(4)) - 1);
+      if (action === 'confirm') startSortie(game.selected);
+      continue;
+    }
+    if (game.screen === 'result') {
+      if (action === 'confirm' || action === 'back') {
+        game.screen = 'board';
+        showBoardSession(game.selected);
+      }
+      if (action === 'retry') startSortie(game.selected);
+      continue;
+    }
+    if (action === 'pause' || action === 'back') {
+      game.screen = game.screen === 'paused' ? 'fly' : 'paused';
+      continue;
+    }
+    if (game.screen !== 'fly') {
+      if (action === 'confirm') game.screen = 'fly';
+      if (action === 'retry') startSortie(game.selected);
+      continue;
+    }
+    if (action === 'flaps') {
+      toggleFlaps(game.session);
+      audio.clunk();
+    } else if (action === 'gear') {
+      toggleGear(game.session);
+      audio.clunk();
+    } else if (action === 'camera') game.view = game.view === 'chase' ? 'cockpit' : 'chase';
+    else if (action === 'map') game.mapOpen = !game.mapOpen;
+    else if (action === 'drop' && dropCrate(game.session)) showBanner('CRATE AWAY', '#ffb347');
+    else if (action === 'retry') startSortie(game.selected);
+  }
+}
+
+function project(x, y, z, W, H) {
+  const v = new THREE.Vector3(x, y, z);
+  const inFront = v.clone().sub(world.camera.position).dot(world.camera.getWorldDirection(new THREE.Vector3())) > 0;
+  v.project(world.camera);
+  return { x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H, visible: inFront };
+}
+
+function drawOverlay(dt) {
+  const dpr = hudCanvas.width / Math.max(1, window.innerWidth);
+  const s = Math.min(window.innerWidth / 1280, window.innerHeight / 800);
+  const W = window.innerWidth / s;
+  const H = window.innerHeight / s;
+  g.setTransform(dpr * s, 0, 0, dpr * s, 0, 0);
+  g.clearRect(0, 0, W, H);
+  const session = game.session;
+  if (game.banner && game.time > game.banner.until) game.banner = null;
+  if (game.screen === 'board') {
+    drawMissionBoard(g, W, H, game.selected, game.best, session.storm.km, game.time);
+    return;
+  }
+  if (game.screen === 'result') {
+    drawResultCard(g, W, H, session);
+    return;
+  }
+  const read = readouts(session);
+  if (game.view === 'cockpit') drawCockpitPanel(g, W, H, session, read);
+  drawFlightHud(g, {
+    session,
+    read,
+    view: game.view,
+    approach: approachInfo(session),
+    project: (x, y, z) => project(x, y, z, W, H),
+    designWidth: W,
+    designHeight: H,
+    mapImage,
+    mapOpen: game.mapOpen,
+    banner: game.banner,
+  });
+  if (game.screen === 'paused') {
+    g.fillStyle = 'rgba(5,6,10,0.6)';
+    g.fillRect(0, 0, W, H);
+    text(g, 'PAUSED', W / 2, H / 2 - 20, 56, '#fff4e0', 'center', 900);
+    text(g, 'P TO FLY ON · T TO RESTART THE SORTIE · ESC FOR THE BOARD AFTER LANDING', W / 2, H / 2 + 30, 16, '#ffb347', 'center', 800);
+  }
+  void dt;
 }
 
 function runGame() {
-  const input = createInput(canvas);
-  let screen = SCREEN_TITLE;
-  let best = readBest();
+  game.input = createInput(window);
+  showBoardSession(0);
   let accumulator = 0;
   let last = performance.now();
-
-  // Screen readers (and anyone watching the page's text) hear the screen changes and each hit.
-  function announce(message) {
-    status.textContent = message;
-  }
-
-  function startGame() {
-    world.reset();
-    accumulator = 0;
-    screen = SCREEN_PLAY;
-    announce(`Playing. ${LIVES} lives.`);
-  }
-
-  function endGame() {
-    screen = SCREEN_OVER;
-    if (world.state.score > best) {
-      best = world.state.score;
-      saveBest(best);
-    }
-    announce(`Game over. Score ${world.state.score}. Best ${best}.`);
-  }
-
-  function handleActions() {
-    const actions = input.takeActions();
-    if (actions & ACTION_CONFIRM && (screen === SCREEN_TITLE || screen === SCREEN_OVER)) startGame();
-    else if (actions & ACTION_PAUSE && screen === SCREEN_PLAY) {
-      screen = SCREEN_PAUSED;
-      announce('Paused.');
-    } else if (actions & (ACTION_PAUSE | ACTION_CONFIRM) && screen === SCREEN_PAUSED) {
-      screen = SCREEN_PLAY;
-      announce('Playing.');
-    }
-  }
-
-  function step() {
-    if (screen === SCREEN_TITLE) {
-      world.step(STEP, 0, true);
-      return;
-    }
-    const events = world.step(STEP, input.direction(), false);
-    if (events & EVENT_OVER) endGame();
-    else if (events & EVENT_HIT) announce(world.state.lives === 1 ? 'Hit. 1 life left.' : `Hit. ${world.state.lives} lives left.`);
-  }
-
   function frame(now) {
     requestAnimationFrame(frame);
-    accumulator += Math.min((now - last) / 1000, MAX_FRAME);
+    const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
-    handleActions();
-    if (screen === SCREEN_TITLE || screen === SCREEN_PLAY) {
-      while (accumulator >= STEP && (screen === SCREEN_TITLE || screen === SCREEN_PLAY)) {
-        step();
+    game.time += dt;
+    handleActions(game.input.takeActions());
+    const session = game.session;
+    let view = game.view;
+    if (game.screen === 'fly') {
+      game.controls = game.input.read(dt, session.aircraft.throttle);
+      accumulator += dt;
+      while (accumulator >= STEP) {
+        handleEvents(stepSession(session, game.controls, STEP));
         accumulator -= STEP;
+      }
+      if (session.state !== 'flying') {
+        game.endTimer += dt;
+        if (game.endTimer > (session.state === 'crashed' ? 3 : 1.6)) {
+          game.screen = 'result';
+          if (session.state === 'complete') {
+            const id = session.mission.id;
+            game.best[id] = Math.max(game.best[id] ?? 0, session.result.stars);
+            saveBest();
+          }
+          placeOrbit(session.aircraft, 0.9, session.state === 'crashed' ? 40 : 18, session.state === 'crashed' ? 14 : 4, new THREE.Vector3(0, -1.5, 0));
+        }
       }
     } else {
       accumulator = 0;
+      if (game.screen === 'paused') view = game.view;
     }
-    renderer.draw(world.state, screen, best);
+    if (game.screen === 'board' || game.screen === 'result') {
+      view = 'orbit';
+      stepSession(session, { pitch: 0, roll: 0, yaw: 0, throttle: 0 }, 0);
+    }
+    if (session.state !== 'flying' && game.screen === 'fly') view = 'orbit';
+    if (view === 'orbit' && game.screen === 'fly') placeOrbit(session.aircraft, world.rig.orbitAngle, 45, 16, new THREE.Vector3());
+    audio.update(session.aircraft, session.mission.rain ? 0.8 : 0, game.screen === 'fly');
+    world.frame(session, game.screen === 'fly' ? game.controls : {}, dt, game.time, view);
+    drawOverlay(dt);
   }
-
-  // Leaving the tab pauses a running game rather than letting blocks fall unseen.
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && screen === SCREEN_PLAY) {
-      screen = SCREEN_PAUSED;
-      announce('Paused.');
-    }
+    if (document.hidden && game.screen === 'fly') game.screen = 'paused';
   });
-
-  announce('Block Dodger. Press Space or click to start.');
+  announce('Kestrel Coast. Pick a sortie with 1 to 4, Enter to fly.');
   requestAnimationFrame(frame);
+}
+
+function runShot(name) {
+  const scene = stageShot(name, seed);
+  game.session = scene.session;
+  game.screen = scene.screen;
+  game.view = scene.view;
+  if (scene.best) game.best = scene.best;
+  world.setSession(scene.session);
+  let time = 40 + seed;
+  let controls = { pitch: 0, roll: 0, yaw: 0, throttle: 0 };
+  if (scene.screen === 'board') {
+    poseForBoard(scene.session);
+    placeOrbit(scene.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
+  }
+  if (scene.screen === 'result') placeOrbit(scene.session.aircraft, 0.75, 19, 4.2, new THREE.Vector3(0, -1.2, 0));
+  for (let i = 0; i < scene.settle; i += 1) {
+    controls = scene.pilot();
+    stepSession(scene.session, controls, STEP);
+    time += STEP;
+    world.fx.puffs.forEach(() => {});
+    world.frame(scene.session, controls, STEP, time, scene.view, i === 0);
+  }
+  game.time = time;
+  game.controls = controls;
+  let painted = 0;
+  function paint() {
+    world.frame(scene.session, controls, painted === 0 ? 0.0001 : 0.0001, time, scene.view);
+    drawOverlay(0);
+    painted += 1;
+    if (painted < 3) requestAnimationFrame(paint);
+    else window.__shotReady = true;
+  }
+  requestAnimationFrame(paint);
 }
 
 if (shot) runShot(shot);
