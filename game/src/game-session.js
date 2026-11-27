@@ -260,6 +260,9 @@ export function stepSession(session, controls, dt) {
   if (session.nextRing < session.rings.length && !a.crashed) {
     const ring = session.rings[session.nextRing];
     const miss = ringCrossing(ring, session.normals[session.nextRing], from, a.pos);
+    if (miss !== null && miss > RING_RADIUS * 1.05 && miss < RING_RADIUS * 6) {
+      session.events.push({ type: 'ring-miss', index: session.nextRing + 1, miss: Math.round(miss - RING_RADIUS) });
+    }
     if (miss !== null && miss <= RING_RADIUS * 1.05) {
       ring.passed = true;
       ring.passedAt = session.time;

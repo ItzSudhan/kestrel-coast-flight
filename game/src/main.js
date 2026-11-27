@@ -120,6 +120,8 @@ function handleEvents(events) {
     if (e.type === 'ring') {
       showBanner(`RING ${e.index} / ${game.session.rings.length}`, '#ffb347');
       audio.ring();
+    } else if (e.type === 'ring-miss') {
+      showBanner(`RING ${e.index} MISSED BY ${e.miss} M — COME ROUND AGAIN`, '#ff8a4a', 2.6);
     } else if (e.type === 'objective') {
       const o = game.session.objectives.find((x) => x.id === e.id);
       if (o) showBanner(`✓ ${o.text.toUpperCase()}  +${o.reward}`, '#5dff8a', 2.4);
