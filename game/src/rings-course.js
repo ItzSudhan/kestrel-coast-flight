@@ -14,7 +14,7 @@ export const RING_COURSE = [
   { x: -650, y: 230, z: -1850 },
   { x: -2450, y: 210, z: -1250 },
   { x: -3950, y: 190, z: -250 },
-  { x: -3620, y: 125, z: 640 },
+  { x: -3680, y: 130, z: 330 },
   { x: -2760, y: 64, z: 798 },
 ];
 
@@ -29,8 +29,9 @@ export function ringNormals(rings, start = { x: -2150, y: 14, z: 800 }, end = { 
     const bz = next.z - ring.z;
     const la = Math.hypot(ax, az) || 1;
     const lb = Math.hypot(bx, bz) || 1;
-    const nx = ax / la + bx / lb;
-    const nz = az / la + bz / lb;
+    const last = index === rings.length - 1;
+    const nx = (last ? 0 : ax / la) + bx / lb;
+    const nz = (last ? 0 : az / la) + bz / lb;
     const l = Math.hypot(nx, nz) || 1;
     return { x: nx / l, y: 0, z: nz / l };
   });

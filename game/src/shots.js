@@ -40,7 +40,7 @@ export function stageShot(name, seed) {
     const session = createSession('storm', seed);
     const pilot = pilotFor(session);
     const t = runwayThreshold(AIRSTRIPS[0], false);
-    const lead = 1500 + SETTLE_STEPS * STEP * 34;
+    const lead = 760 + SETTLE_STEPS * STEP * 32;
     flyUntil(session, pilot, (s) => Math.abs(s.aircraft.pos.z - t.z) < 40 && Math.hypot(s.aircraft.pos.x - t.x, s.aircraft.pos.z - t.z) < lead, 240);
     return { screen: 'fly', session, view: 'cockpit', pilot, settle: SETTLE_STEPS };
   }

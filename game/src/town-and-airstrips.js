@@ -14,11 +14,11 @@ function runwayTexture(strip) {
   canvas.height = 4096;
   const g = canvas.getContext('2d');
   const scale = canvas.height / strip.length;
-  g.fillStyle = '#4a4747';
+  g.fillStyle = '#827a74';
   g.fillRect(0, 0, 256, 4096);
   const random = createRandom(strip.length);
   for (let i = 0; i < 2600; i += 1) {
-    g.fillStyle = random() > 0.5 ? 'rgba(90,86,84,0.5)' : 'rgba(52,50,52,0.5)';
+    g.fillStyle = random() > 0.5 ? 'rgba(150,142,134,0.45)' : 'rgba(96,90,88,0.45)';
     g.fillRect(random() * 256, random() * 4096, 3 + random() * 14, 2 + random() * 30);
   }
   g.fillStyle = 'rgba(30,28,30,0.35)';

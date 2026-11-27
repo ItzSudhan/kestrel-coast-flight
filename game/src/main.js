@@ -85,6 +85,8 @@ function showBoardSession(index) {
 }
 
 const BOARD_ORBIT = { angle: -1.05, radius: 15, height: 1.6, shift: new THREE.Vector3(0, -2.4, 0) };
+/** After landing the camera stands south-west of the aircraft, in the sun, with the card to the right. */
+const RESULT_ORBIT = { angle: -0.75, radius: 17, height: 3.2, shift: new THREE.Vector3(6.5, -0.6, 6.5) };
 
 function placeOrbit(aircraft, angle, radius, height, shift) {
   const rig = world.rig;
@@ -256,7 +258,8 @@ function runGame() {
             game.best[id] = Math.max(game.best[id] ?? 0, session.result.stars);
             saveBest();
           }
-          placeOrbit(session.aircraft, 0.9, session.state === 'crashed' ? 40 : 18, session.state === 'crashed' ? 14 : 4, new THREE.Vector3(0, -1.5, 0));
+          if (session.state === 'crashed') placeOrbit(session.aircraft, -0.8, 42, 14, new THREE.Vector3(9, -2, 9));
+          else placeOrbit(session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
         }
       }
     } else {
@@ -293,7 +296,7 @@ function runShot(name) {
     poseForBoard(scene.session);
     placeOrbit(scene.session.aircraft, BOARD_ORBIT.angle, BOARD_ORBIT.radius, BOARD_ORBIT.height, BOARD_ORBIT.shift);
   }
-  if (scene.screen === 'result') placeOrbit(scene.session.aircraft, 0.75, 19, 4.2, new THREE.Vector3(0, -1.2, 0));
+  if (scene.screen === 'result') placeOrbit(scene.session.aircraft, RESULT_ORBIT.angle, RESULT_ORBIT.radius, RESULT_ORBIT.height, RESULT_ORBIT.shift);
   for (let i = 0; i < scene.settle; i += 1) {
     controls = scene.pilot();
     stepSession(scene.session, controls, STEP);
