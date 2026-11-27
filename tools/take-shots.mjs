@@ -118,7 +118,18 @@ try {
     await key('KeyS', 's', 1200);
     await sleep(3000);
     await key('KeyG', 'g');
-    if (args.includes('--crash')) {
+    if (args.includes('--crisis')) {
+      // Fly on until Kestrel Radio puts the storm call, answer it with the 1 key, and look.
+      await key('KeyF', 'f');
+      await key('KeyF', 'f');
+      await key('KeyG', 'g');
+      await waitFor(() => evaluate('document.getElementById("status").textContent.includes("cut the route")'), 200000, 'the storm call');
+      await sleep(1500);
+      await key('Digit1', '1');
+      await sleep(900);
+      const answered = await evaluate('document.getElementById("status").textContent');
+      console.log(`  after pressing 1: ${answered}`);
+    } else if (args.includes('--crash')) {
       await key('KeyW', 'w', 9000);
       await sleep(5000);
     } else if (args.includes('--chase')) {

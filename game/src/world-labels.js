@@ -84,7 +84,10 @@ export function drawTargetMarker(g, frame, target) {
   g.lineTo(-8, 11);
   g.fill();
   g.restore();
-  labelBox(g, label, ex, ey + 26, 15, target.colour);
+  // Keep the label in the clear middle, off the side panels.
+  g.font = `800 15px ${FONT}`;
+  const half = (g.measureText(label).width + 17) / 2;
+  labelBox(g, label, Math.max(330 + half, Math.min(W - 330 - half, ex)), ey + 26, 15, target.colour);
 }
 
 /**

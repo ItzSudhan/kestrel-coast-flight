@@ -179,6 +179,7 @@ function handleEvents(events) {
     } else if (e.type === 'crisis-choice') {
       const divert = e.choice === 1;
       showBanner(divert ? `DIVERTING · ${game.session.crisis.options.divert.strip.name.toUpperCase()}` : `PUSHING THROUGH · +${game.session.crisis.options.push.bonus}`, divert ? '#9fe8ff' : '#c9a8ff', 2.6);
+      announce(divert ? `Diverting to ${game.session.crisis.options.divert.strip.name}.` : 'Pushing through the squall.');
     } else if (e.type === 'gust' && e.kt >= 18) showBanner(`GUST ${e.kt} KT`, '#9fe8ff', 1.4);
     else if (e.type === 'crosswind') showMoment(`CROSSWIND ${e.kt} KT`, `FROM THE ${e.side} · CRAB INTO IT · RUNWAY ${e.runway}`, '#9fe8ff', 4, 24);
     else if (e.type === 'gear-jammed') showMoment('GEAR JAMMED', 'NO WHEELS · BELLY LANDING ONLY', '#ff8a4a', 3.5);
