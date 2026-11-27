@@ -327,6 +327,18 @@ export function stepSession(session, controls, dt) {
     }
     if (event.type === 'gear-jammed') say(session, SPEAKER_PILOT, 'Gear’s taken a beating — it won’t lock. Belly landing.');
   }
+  // The short-final wind check at 0.3 NM: a strong crosswind gets its own call.
+  if (!session.crossCalled && !a.onGround) {
+    const ap = approachInfo(session);
+    if (ap?.final && ap.distance < 556) {
+      session.crossCalled = true;
+      const rw = runwayWind(wind, ap.threshold.heading);
+      if (rw.crossKt >= 12) {
+        session.events.push({ type: 'crosswind', kt: Math.round(rw.crossKt), side: rw.side, runway: ap.threshold.name });
+        say(session, SPEAKER_RADIO, `Kestrel Radio: Wind check — ${Math.round(rw.crossKt)} knots across from the ${rw.side.toLowerCase()}. Crab into it.`);
+      }
+    }
+  }
   if (session.destination === 'puffin' && Math.hypot(a.pos.x - 5300, a.pos.z + 450) < 1800 && complete(session, 'reach-puffin')) {
     say(session, SPEAKER_NURSE, 'Puffin Cay: I can hear your engine! Runway 36, wind light. Mind the sheep.');
   }
