@@ -141,6 +141,11 @@ function handleEvents(events) {
     else if (e.type === 'landed') announce(`Landed: ${e.grade}`);
   }
   if (game.session.storm.flash > 0.99) audio.thunder();
+  const lastCall = game.session.radio[game.session.radio.length - 1];
+  if (lastCall && lastCall !== game.heardCall) {
+    game.heardCall = lastCall;
+    audio.squelch();
+  }
 }
 
 function handleActions(actions) {

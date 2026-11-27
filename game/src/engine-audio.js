@@ -146,6 +146,10 @@ export function createEngineAudio() {
       burst(1.6, 0.9, 700);
       blip(60, 1.2, 'sawtooth', 0.4, 0.3);
     },
+    squelch() {
+      burst(0.09, 0.12, 3200);
+      setTimeout(() => burst(0.05, 0.08, 2400), 140);
+    },
     thunder() {
       burst(2.4, 0.35, 260);
     },
