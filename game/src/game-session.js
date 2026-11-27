@@ -287,7 +287,12 @@ export function stepSession(session, controls, dt) {
     if (event.type === 'stopped' && a.firstTouchdown) {
       const here = nearStrip(a);
       if (here) finishLanding(session, here);
-      else if (!session.offFieldWarned) {
+      else if (a.belly) {
+        session.state = 'failed';
+        session.result = { ...scoreSortie(session), cause: 'Belly-landed off the field', stamp: 'STRANDED' };
+        say(session, SPEAKER_RADIO, 'Kestrel Radio: We see you down out there. Stay with her, the launch is coming.');
+        session.events.push({ type: 'sortie-over' });
+      } else if (!session.offFieldWarned) {
         session.offFieldWarned = true;
         say(session, SPEAKER_RADIO, 'Kestrel Radio: You’re down off the field. Taxi back or take off again.');
       }
@@ -299,7 +304,7 @@ export function stepSession(session, controls, dt) {
     session.closedFor = (session.closedFor ?? 0) + dt;
     if (session.closedFor > 20) {
       session.state = 'failed';
-      session.result = { ...scoreSortie(session), cause: 'The storm closed the coast' };
+      session.result = { ...scoreSortie(session), cause: 'The storm closed the coast', stamp: 'STORM CLOSED' };
       session.events.push({ type: 'sortie-over' });
     }
   }

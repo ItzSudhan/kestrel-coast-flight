@@ -129,7 +129,7 @@ export function drawResultCard(g, W, H, session) {
     text(g, String(result.total), x + 24, ry + 38, 50, '#ffffff', 'left', 900);
     drawStars(g, x + w - 24 - 150, ry + 26, result.stars, 44);
   } else {
-    stamp(g, x + w / 2, y + 130, session.state === 'crashed' ? 'CRASHED' : 'STORM CLOSED', '#ff5a45', -0.08);
+    stamp(g, x + w / 2, y + 130, session.state === 'crashed' ? 'CRASHED' : result.stamp ?? 'SORTIE FAILED', '#ff5a45', -0.08);
     text(g, 'CAUSE', x + 24, y + 210, 15, AMBER, 'left', 800);
     g.font = `800 28px ${FONT}`;
     text(g, result.cause ?? 'Unknown', x + 24, y + 246, 28, '#ffffff', 'left', 800);
