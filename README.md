@@ -65,6 +65,7 @@ The game is plain ES modules under `game/src`, with three.js vendored at `game/v
 ### Tools
 
 - `node tools/playtest.mjs`: a headless playtest. A seeded autopilot takes off, flies all eight rings and lands, and the script checks the stall speeds, control authority, stall behaviour, crash causes and landing grades.
+- `node tools/fuzz-sorties.mjs`: flies every sortie under many seeds with a random pilot mashing every control, and fails on any exception, NaN state, or a sortie that ends without a result.
 - `node tools/take-shots.mjs`: renders the four `?shot=` scenes listed in `shots.json` in headless Chrome and fails on any console error. Add `--play` to drive the real game with key presses instead.
 
 ---
