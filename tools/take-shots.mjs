@@ -101,7 +101,9 @@ try {
   if (play) {
     mkdirSync(join(root, 'out'), { recursive: true });
     await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/index.html?seed=3` });
-    await sleep(4000);
+    const loaded = await waitFor(() => evaluate('document.getElementById("status").textContent.startsWith("Kestrel Coast") && performance.now()'), 30000, 'game start');
+    console.log(`  game ready ${Math.round(loaded)} ms after navigation`);
+    await sleep(500);
     const key = async (code, key, hold = 0) => {
       await send('Input.dispatchKeyEvent', { type: 'keyDown', code, key, windowsVirtualKeyCode: key.length === 1 ? key.toUpperCase().charCodeAt(0) : 13 });
       if (hold) await sleep(hold);
